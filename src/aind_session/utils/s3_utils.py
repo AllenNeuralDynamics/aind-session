@@ -31,9 +31,7 @@ def get_source_dir_by_name(name: str, ttl_hash: int | None = None) -> upath.UPat
         path = upath.UPath(f"s3://{s3_bucket}/{name}")
         if path.exists():
             return path
-    raise FileNotFoundError(
-        f"No dir named {name!r} found in known data buckets on S3"
-    )
+    raise FileNotFoundError(f"No dir named {name!r} found in known data buckets on S3")
 
 
 if __name__ == "__main__":

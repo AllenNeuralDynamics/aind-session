@@ -55,9 +55,7 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
     def json_dir(self) -> upath.UPath:
         """Parent dir containing metadata json files"""
         path = self._session.raw_data_dir  # may raise FileNotFoundError
-        logger.debug(
-            f"Using {path.as_posix()} as parent dir for metadata json files"
-        )
+        logger.debug(f"Using {path.as_posix()} as parent dir for metadata json files")
         return path
 
     @npc_io.cached_property
