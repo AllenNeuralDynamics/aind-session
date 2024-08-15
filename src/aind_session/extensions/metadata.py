@@ -4,12 +4,13 @@ import json
 import logging
 from typing import Any
 
+import npc_io
 import upath
 
 import aind_session.extension
 import aind_session.session
 import aind_session.utils.codeocean_utils
-
+        json_path = next(p for p in self.json_paths if p.stem == name)
 logger = logging.getLogger(__name__)
 
 
@@ -35,28 +36,29 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
             >>> content = getattr(session.metadata, 'metadata.nd')
         """
         try:
-            folder = self._session.raw_data_folder
+            _ = self.json_paths
         except FileNotFoundError:
             raise AttributeError(
                 f"No raw data folder found for {self._session.id}"
             ) from None
         try:
-            content = (path := folder / f"{name}.json").read_text()
-        except FileNotFoundError:
+            path = next(p for p in self.json_paths if p.stem == str(name))
+        except StopIteration:
             raise AttributeError(
-                f"No {name!r} metadata json found in {folder}"
+                f"No {name}.json found in cached view of {self.raw_data_folder.as_posix()}. Available files: {[p.name for p in self.json_paths]}"
             ) from None
         else:
             logger.debug(f"Using contents of metadata json at {path.as_posix()}")
         return json.loads(content)
 
-    def get_available_json_paths(self) -> tuple[upath.UPath, ...]:
+    @npc_io.cached_property
+    def json_paths(self) -> tuple[upath.UPath, ...]:
         """All available metadata jsons in the raw data folder.
 
         Examples:
             >>> from aind_session import Session
             >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-            >>> [path.name for path in session.metadata.get_available_json_paths()]
+            >>> [path.name for path in session.metadata.json_paths]
             ['data_description.json', 'metadata.nd.json', 'procedures.json', 'processing.json', 'rig.json', 'session.json', 'subject.json']
         """
         return tuple(
