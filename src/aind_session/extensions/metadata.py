@@ -10,7 +10,7 @@ import upath
 import aind_session.extension
 import aind_session.session
 import aind_session.utils.codeocean_utils
-        json_path = next(p for p in self.json_paths if p.stem == name)
+
 logger = logging.getLogger(__name__)
 
 
