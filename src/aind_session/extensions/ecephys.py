@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 import codeocean.data_asset
+import npc_io
 import npc_session
 import upath
 
@@ -46,7 +47,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         logger.debug(f"Using {asset.id=} for {self._session.id} raw data asset")
         return asset
 
-    @property
+    @npc_io.cached_property
     def sorted_data_folder(self) -> upath.UPath:
         """Path to the sorted data associated with the session, likely in an S3
         bucket.
