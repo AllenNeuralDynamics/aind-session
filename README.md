@@ -24,8 +24,6 @@ This package is meant to provide easy access to session-related stuff required f
 
 # Usage
 ```bash
-conda create -n aind_session python>=3.9
-conda activate aind_session
 pip install aind_session
 ```
 
@@ -56,4 +54,4 @@ datetime.datetime(2023, 12, 13, 13, 43, 40)
 ```
 
 # Development
-See instructions in https://github.com/AllenNeuralDynamics/aind-session/CONTRIBUTING.md and the original template: https://github.com/AllenInstitute/copier-pdm-npc/blob/main/README.md
+See instructions in [CONTRIBUTING.md](https://github.com/AllenNeuralDynamics/aind-session/blob/main/CONTRIBUTING.md) and the [original template](https://github.com/AllenInstitute/copier-pdm-npc/blob/main/README.md)
