@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
 
 import upath
 
@@ -21,7 +22,7 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
     (e.g. 'metadata.nd.json'), but can be accessed via gettattr
     """
 
-    def __getattr__(self, name: str) -> str:
+    def __getattr__(self, name: str) -> dict[str, Any]:
         """Fetch metadata from the raw data folder.
 
         Examples:
