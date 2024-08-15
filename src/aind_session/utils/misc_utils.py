@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 import logging
@@ -7,6 +6,7 @@ import time
 import npc_session
 
 logger = logging.getLogger(__name__)
+
 
 def get_ttl_hash(seconds: float = 2 * 60) -> int:
     """Return the same value within `seconds` time period.
@@ -17,5 +17,8 @@ def get_ttl_hash(seconds: float = 2 * 60) -> int:
     """
     return round(time.time() / seconds)
 
-def get_session_record(value: str | npc_session.AINDSessionRecord) -> npc_session.AINDSessionRecord:
+
+def get_session_record(
+    value: str | npc_session.AINDSessionRecord,
+) -> npc_session.AINDSessionRecord:
     return npc_session.AINDSessionRecord(value)

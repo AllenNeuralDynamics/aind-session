@@ -5,10 +5,10 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:9f4dfa2ab68659a2dfb9761fdc9bea6d6618d8222c15c5744c3d7909c4e6c26d"
+content_hash = "sha256:9d78d1eaff17c46ece9459250063c16bbc29ba81b38b9798eddd375160dbf164"
 
 [[metadata.targets]]
-requires_python = ">=3.9"
+requires_python = ">=3.9,<3.12"
 
 [[package]]
 name = "aiobotocore"
