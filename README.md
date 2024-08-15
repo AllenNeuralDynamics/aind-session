@@ -28,11 +28,12 @@ This package is meant to provide easy access to session-related stuff required f
 Credentials are required for:
   - S3
     - using the "assumable role" in CodeOcean should suffice
-    - alternatively, access keys as environment variables or in a config file will be found by boto3 (see [docs])(https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html)
+    - alternatively, access keys as environment variables or in a config file will be found by `boto3` (see [docs](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html))
   - CodeOcean API
-    - an access token is required:
-      - `CODE_OCEAN_API_TOKEN` is the preferred key
-      - if not found, the first environment variable starting with `COP_` is used (case-insensitive)
+    - an access token is required with at least "Datasets - Read" scope:
+      - see CodeOcean's [docs](https://docs.codeocean.com/user-guide/code-ocean-api/authentication) on how to create a token
+      - `CODE_OCEAN_API_TOKEN` is the preferred environment variable name 
+      - if not found, the first environment variable with a value starting `COP_` is used (case-insensitive)
     - domain name defaults to `https://codeocean.allenneuraldynamics.org`, but can be overridden by setting `CODE_OCEAN_DOMAIN`
 
 For development, environment variables can be provided in a `.env` file in the project root directory or the user's home directory.
