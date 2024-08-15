@@ -1,0 +1,29 @@
+
+import contextlib
+import functools
+import logging
+from multiprocessing import context
+import os
+import time
+from collections.abc import Iterable
+import uuid
+
+import codeocean
+import codeocean.data_asset
+import npc_session
+import upath
+
+
+logger = logging.getLogger(__name__)
+
+def get_ttl_hash(seconds: float = 2 * 60) -> int:
+    """Return the same value within `seconds` time period.
+
+    - used to cache function results for a limited period of time
+
+    From https://stackoverflow.com/a/55900800
+    """
+    return round(time.time() / seconds)
+
+def get_session_record(value: str | npc_session.AINDSessionRecord) -> npc_session.AINDSessionRecord:
+    return npc_session.AINDSessionRecord(value)

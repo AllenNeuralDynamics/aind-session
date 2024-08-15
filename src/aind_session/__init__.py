@@ -6,7 +6,10 @@ import importlib.metadata
 import logging
 
 # import functions from submodules here:
-# from aind_session.utils import *
+from aind_session.utils.codeocean_utils import *
+from aind_session.session import *
+import aind_session.extensions
+_ = aind_session.extensions
 
 logger = logging.getLogger(__name__)
 
