@@ -127,10 +127,10 @@ def is_raw_data_asset(asset: str | uuid.UUID | codeocean.data_asset.DataAsset) -
         return False
 
 
-def get_data_asset_source_folder(
+def get_data_asset_source_dir(
     asset: str | uuid.UUID | codeocean.data_asset.DataAsset,
 ) -> upath.UPath:
-    """Get the source folder for a data asset.
+    """Get the source dir for a data asset.
 
     - the path is constructed from the asset's `source_bucket` metadata
     - otherwise, the path is constructed from the asset's ID and known S3
@@ -138,23 +138,23 @@ def get_data_asset_source_folder(
     - otherwse, the path is constructed from the asset's name and known S3
       buckets, and existence is checked
 
-    - raises `FileNotFoundError` if a folder is not found
+    - raises `FileNotFoundError` if a dir is not found
 
     Examples:
-        >>> get_data_asset_source_folder('83636983-f80d-42d6-a075-09b60c6abd5e').as_posix()
+        >>> get_data_asset_source_dir('83636983-f80d-42d6-a075-09b60c6abd5e').as_posix()
         's3://aind-ephys-data/ecephys_668759_2023-07-11_13-07-32'
     """
 
-    def get_folder_from_known_s3_locations(
+    def get_dir_from_known_s3_locations(
         asset: codeocean.data_asset.DataAsset,
     ) -> upath.UPath:
         for key in (asset.id, asset.name):
             with contextlib.suppress(FileNotFoundError):
-                return aind_session.utils.get_source_folder_by_name(
+                return aind_session.utils.get_source_dir_by_name(
                     key, ttl_hash=aind_session.utils.get_ttl_hash(10 * 60)
                 )
         raise FileNotFoundError(
-            f"No source folder found for {asset.id=} or {asset.name=} in known S3 buckets"
+            f"No source dir found for {asset.id=} or {asset.name=} in known S3 buckets"
         )
 
     asset = get_data_asset(asset)
@@ -182,7 +182,7 @@ def get_data_asset_source_folder(
         logger.debug(
             f"No source_bucket metadata available for {asset.id}, {asset.name}"
         )
-    return get_folder_from_known_s3_locations(asset)
+    return get_dir_from_known_s3_locations(asset)
 
 
 @functools.cache

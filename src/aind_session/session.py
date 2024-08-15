@@ -32,23 +32,23 @@ class Session:
         datetime.datetime(2023, 12, 13, 13, 43, 40)
         >>> session.raw_data_asset.id
         '16d46411-540a-4122-b47f-8cb2a15d593a'
-        >>> session.raw_data_folder.as_posix()
+        >>> session.raw_data_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
 
         # Should be able to handle all platforms:
         >>> session = Session('multiplane-ophys_741863_2024-08-13_09-26-41')
-        >>> session.raw_data_folder.as_posix()
+        >>> session.raw_data_dir.as_posix()
         's3://aind-private-data-prod-o5171v/multiplane-ophys_741863_2024-08-13_09-26-41'
 
         >>> session = Session('behavior_717121_2024-06-16_11-39-34')
-        >>> session.raw_data_folder.as_posix()
+        >>> session.raw_data_dir.as_posix()
         's3://aind-private-data-prod-o5171v/behavior_717121_2024-06-16_11-39-34'
 
         >>> session = Session('SmartSPIM_698260_2024-07-20_21-47-21')
-        >>> session.raw_data_folder.as_posix()
+        >>> session.raw_data_dir.as_posix()
         Traceback (most recent call last):
         ...
-        FileNotFoundError: No raw data asset in CodeOcean and no folder in known data buckets on S3 for SmartSPIM_698260_2024-07-20_21-47-21
+        FileNotFoundError: No raw data asset in CodeOcean and no dir in known data buckets on S3 for SmartSPIM_698260_2024-07-20_21-47-21
 
         # Additional functionality for modalities added by extensions:
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
@@ -109,12 +109,12 @@ class Session:
         return asset
 
     @npc_io.cached_property
-    def raw_data_folder(self) -> upath.UPath:
+    def raw_data_dir(self) -> upath.UPath:
         """Path to the raw data associated with the session, likely in an S3
         bucket.
 
         - uses latest raw data asset to get path (existence is checked)
-        - if no raw data asset is found, checks for a data folder in S3
+        - if no raw data asset is found, checks for a data dir in S3
         - raises `FileNotFoundError` if no raw data assets are available to link
           to the session
         """
@@ -122,23 +122,23 @@ class Session:
             _ = self.raw_data_asset
         except LookupError:
             with contextlib.suppress(FileNotFoundError):
-                path = aind_session.utils.get_source_folder_by_name(self.id)
+                path = aind_session.utils.get_source_dir_by_name(self.id)
                 logger.debug(
-                    f"No raw data asset uploaded for {self.id}, but data folder found: {path}"
+                    f"No raw data asset uploaded for {self.id}, but data dir found: {path}"
                 )
                 return path
             raise FileNotFoundError(
-                f"No raw data asset in CodeOcean and no folder in known data buckets on S3 for {self.id}"
+                f"No raw data asset in CodeOcean and no dir in known data buckets on S3 for {self.id}"
             ) from None
         else:
             logger.debug(
                 f"Using asset {self.raw_data_asset.id} to find raw data path for {self.id}"
             )
-            raw_data_folder = aind_session.utils.get_data_asset_source_folder(
+            raw_data_dir = aind_session.utils.get_data_asset_source_dir(
                 self.raw_data_asset
             )
-            logger.debug(f"Raw data folder found for {self.id}: {raw_data_folder}")
-            return raw_data_folder
+            logger.debug(f"Raw data dir found for {self.id}: {raw_data_dir}")
+            return raw_data_dir
 
 
 if __name__ == "__main__":

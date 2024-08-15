@@ -48,19 +48,19 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         return asset
 
     @npc_io.cached_property
-    def sorted_data_folder(self) -> upath.UPath:
+    def sorted_data_dir(self) -> upath.UPath:
         """Path to the sorted data associated with the session, likely in an S3
         bucket.
 
         - uses latest sorted data asset to get path (existence is checked)
-        - if no sorted data asset is found, checks for a data folder in S3
+        - if no sorted data asset is found, checks for a data dir in S3
         - raises `FileNotFoundError` if no sorted data assets are available to link
           to the session
 
         Examples:
             >>> from aind_session import Session
             >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-            >>> session.ecephys.sorted_data_folder.as_posix()
+            >>> session.ecephys.sorted_data_dir.as_posix()
             's3://codeocean-s3datasetsbucket-1u41qdg42ur9/a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
         """
         try:
@@ -73,15 +73,15 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             logger.debug(
                 f"Using asset {self.sorted_data_asset.id} to find sorted data path for {self._session.id}"
             )
-            sorted_data_folder = (
-                aind_session.utils.codeocean_utils.get_data_asset_source_folder(
+            sorted_data_dir = (
+                aind_session.utils.codeocean_utils.get_data_asset_source_dir(
                     self.sorted_data_asset
                 )
             )
             logger.debug(
-                f"Sorted data path found for {self._session.id}: {sorted_data_folder}"
+                f"Sorted data path found for {self._session.id}: {sorted_data_dir}"
             )
-            return sorted_data_folder
+            return sorted_data_dir
 
     @staticmethod
     def is_sorted_data_asset(asset_id: str | codeocean.data_asset.DataAsset) -> bool:

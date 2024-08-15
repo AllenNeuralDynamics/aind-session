@@ -6,12 +6,12 @@
     "python.analysis.typeCheckingMode": "off",
     "workbench.colorCustomizations": {
         "commandCenter.border": "#e7e7e799",
-        "panel.border": "#d56eb0",
-        "sash.hoverBorder": "#d56eb0",
-        "titleBar.activeBackground": "#ca469a",
+        "panel.border": "#ee2590",
+        "sash.hoverBorder": "#ee2590",
+        "titleBar.activeBackground": "#d01076",
         "titleBar.activeForeground": "#e7e7e7",
-        "titleBar.inactiveBackground": "#ca469a99",
+        "titleBar.inactiveBackground": "#d0107699",
         "titleBar.inactiveForeground": "#e7e7e799"
     },
-    "peacock.color": "#ca469a"
+    "peacock.color": "#d01076"
 }

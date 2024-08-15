@@ -16,13 +16,13 @@ S3_DATA_BUCKET_NAMES = (
 
 
 @functools.cache
-def get_source_folder_by_name(name: str, ttl_hash: int | None = None) -> upath.UPath:
-    """Checks known S3 buckets for a folder with the given name.
+def get_source_dir_by_name(name: str, ttl_hash: int | None = None) -> upath.UPath:
+    """Checks known S3 buckets for a dir with the given name.
 
-    - raises `FileNotFoundError` if the folder is not found
+    - raises `FileNotFoundError` if the dir is not found
 
     Examples:
-        >>> get_source_folder_by_name('ecephys_676909_2023-12-13_13-43-40').as_posix()
+        >>> get_source_dir_by_name('ecephys_676909_2023-12-13_13-43-40').as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
     """
     del ttl_hash  # only used for functools.cache
@@ -32,7 +32,7 @@ def get_source_folder_by_name(name: str, ttl_hash: int | None = None) -> upath.U
         if path.exists():
             return path
     raise FileNotFoundError(
-        f"No folder named {name!r} found in known data buckets on S3"
+        f"No dir named {name!r} found in known data buckets on S3"
     )
 
 
