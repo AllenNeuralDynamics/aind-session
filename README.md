@@ -12,7 +12,6 @@ User-friendly tools for accessing paths, metadata and assets related to AIND ses
 ## *Under development!*
 Please check this out and make feature requests, but don't rely on the API to remain stable just yet..
 
----
 
 # Aim
 This package is meant to provide easy access to session-related stuff required for common tasks in CodeOcean and beyond. 
