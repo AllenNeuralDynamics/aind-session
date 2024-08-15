@@ -1,5 +1,8 @@
 # aind-session
 
+## *Under development!*
+Please check this out and make feature requests, but don't rely on the API to remain stable just yet..
+
 User-friendly tools for accessing paths, metadata and assets related to AIND sessions.
 
 [![PyPI](https://img.shields.io/pypi/v/aind-session.svg?label=PyPI&color=blue)](https://pypi.org/project/aind-session/)
@@ -8,6 +11,13 @@ User-friendly tools for accessing paths, metadata and assets related to AIND ses
 [![Coverage](https://img.shields.io/codecov/c/github/AllenNeuralDynamics/aind-session?logo=codecov)](https://app.codecov.io/github/AllenNeuralDynamics/aind-session)
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/AllenNeuralDynamics/aind-session/publish.yml?label=CI/CD&logo=github)](https://github.com/AllenNeuralDynamics/aind-session/actions/workflows/publish.yml)
 [![GitHub issues](https://img.shields.io/github/issues/AllenNeuralDynamics/aind-session?logo=github)](https://github.com/AllenNeuralDynamics/aind-session/issues)
+
+# Aim
+This package is meant to provide easy access to session-related stuff required for common tasks in CodeOcean and beyond. 
+
+- when interacting with the CodeOcean API, it uses and returns objects from the [official Python library](https://github.com/codeocean/codeocean-sdk-python) - we will avoid duplicating functionality provided by that package, except to make convenience functions with assumptions baked-in (for example, getting a client with environment variables and a default domain; finding all the assets for a particular session)
+- the core `Session` class should have a minimal set of methods and attributes that are common to sessions from all platforms
+- extensions provide additional functionality (e.g. for specific modalities, metadata, databases) - at the moment, this is implemented via registration of namespaces ([like Pandas](https://pandas.pydata.org/docs/development/extending.html)), which allows for extending without subclassing
 
 # Usage
 ```bash
