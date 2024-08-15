@@ -54,8 +54,10 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
     @property
     def json_folder(self) -> upath.UPath:
         """Parent folder containing metadata json files"""
-        path = self._session.raw_data_folder # may raise FileNotFoundError
-        logger.debug(f"Using {path.as_posix()} as parent folder for metadata json files")
+        path = self._session.raw_data_folder  # may raise FileNotFoundError
+        logger.debug(
+            f"Using {path.as_posix()} as parent folder for metadata json files"
+        )
         return path
 
     @npc_io.cached_property
@@ -70,11 +72,7 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
         """
         return tuple(
             sorted(
-                (
-                    path
-                    for path in self.json_folder.iterdir()
-                    if path.suffix == ".json"
-                ),
+                (path for path in self.json_folder.iterdir() if path.suffix == ".json"),
                 key=lambda p: p.name,
             )
         )
