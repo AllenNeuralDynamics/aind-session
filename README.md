@@ -83,8 +83,11 @@ True
 
 When working in a capsule, the `Session` object can be used to find or verify attached data assets:
 ```python
+>>> import os
+
 >>> import aind_session
->>> import upath # works the same way as pathlib
+>>> import codeocean    # codeocean's python sdk for interacting with the api
+>>> import upath        # works the same way as pathlib
 
 # find all attached data dirs in the capsule:
 >>> capsule_data_dir = upath.UPath('tests/resources/capsule_tree/data') # just '/data' in an actual capsule 
@@ -98,11 +101,20 @@ When working in a capsule, the `Session` object can be used to find or verify at
 [Session('ecephys_676909_2023-12-11_14-24-35'), Session('ecephys_676909_2023-12-13_13-43-40')]
 
 # check that particular sessions have their raw data or latest sorted data assets attached:
->>> attached_sessions[0].raw_data_asset.name in attached_data_names
-False
 >>> attached_sessions[0].ecephys.sorted_data_asset.name in attached_data_names
 True
+>>> attached_sessions[0].raw_data_asset.name in attached_data_names
+False
 
+# a missing asset could then be attached to the current capsule (although this might not be advisable in a "Reproducible run"):
+>>> aind_session.get_codeocean_client().capsules.attach_data_assets(            # doctest: +SKIP
+...     capsule_id=os.getenv('OS_CAPSULE_ID'),
+...     attach_params=[
+...         codeocean.data_asset.DataAssetAttachParams(
+...             id=attached_sessions[0].raw_data_asset.id,
+...         ),
+...     ],
+... )
 ```
 
 
