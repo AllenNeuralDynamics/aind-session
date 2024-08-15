@@ -100,7 +100,7 @@ class Session:
             logger.warning(
                 f"Found multiple raw data assets for {self.id}: latest asset will be used as raw data"
             )
-            asset = assets[-1]
+            asset = aind_session.utils.sort_data_assets(assets)[-1]
         else:
             raise LookupError(
                 f"No raw data asset found for {self.id}. Has session data been uploaded?"
