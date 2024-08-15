@@ -45,11 +45,18 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
             path = next(p for p in self.json_paths if p.stem == str(name))
         except StopIteration:
             raise AttributeError(
-                f"No {name}.json found in cached view of {self.raw_data_folder.as_posix()}. Available files: {[p.name for p in self.json_paths]}"
+                f"No {name}.json found in cached view of {self.json_folder.as_posix()}. Available files: {[p.name for p in self.json_paths]}"
             ) from None
         else:
             logger.debug(f"Using contents of metadata json at {path.as_posix()}")
-        return json.loads(content)
+        return json.loads(path.read_text())
+
+    @property
+    def json_folder(self) -> upath.UPath:
+        """Parent folder containing metadata json files"""
+        path = self._session.raw_data_folder # may raise FileNotFoundError
+        logger.debug(f"Using {path.as_posix()} as parent folder for metadata json files")
+        return path
 
     @npc_io.cached_property
     def json_paths(self) -> tuple[upath.UPath, ...]:
@@ -65,7 +72,7 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
             sorted(
                 (
                     path
-                    for path in self._session.raw_data_folder.iterdir()
+                    for path in self.json_folder.iterdir()
                     if path.suffix == ".json"
                 ),
                 key=lambda p: p.name,
