@@ -57,10 +57,16 @@ class Session:
 
     def __init__(self, session_id: str) -> None:
         """
-        Initialize a session object from a session ID.
+        Initialize a session object from a session ID, or a string containing one.
 
         Examples:
             >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
+            
+            # the same session ID would be extracted from a path:
+            >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
+            
+            # the same session ID would be extracted from a longer string:
+            >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
         """
         # parse ID to make sure it's valid
         record = npc_session.AINDSessionRecord(session_id)
@@ -71,10 +77,40 @@ class Session:
         self.time = record.time
         self.dt = record.dt
         self.id = str(record.id)
+        logger.debug(f"Created {self!r} from {session_id}")
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.id!r})"
 
+    def __eq__(self, other: object) -> bool:
+        """
+        Examples:
+            >>> a = Session('ecephys_676909_2023-12-13_13-43-40')
+            >>> b = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
+            >>> assert a == b and a is not b, "Session objects must be equal based on session ID"
+        """
+        if not isinstance(other, Session):
+            return NotImplemented
+        return self.id == other.id
+    
+    def __hash__(self) -> int:
+        """
+        Examples:
+            >>> a = Session('ecephys_676909_2023-12-13_13-43-40')
+            >>> b = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
+            >>> assert len(set((a, b))) == 1, "Session objects must be hashable, based on session ID"
+        """
+        return hash(self.id)
+    
+    def __lt__(self, other: Session) -> bool:
+        """
+        Examples:
+            >>> a = Session('ecephys_676909_2023-12-11_14-24-35')
+            >>> b = Session('ecephys_676909_2023-12-13_13-43-40')
+            >>> assert a < b, "Session objects must be comparable based on session ID"
+        """
+        return self.id < other.id
+    
     @npc_io.cached_property
     def assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """All data assets associated with the session - may be empty.

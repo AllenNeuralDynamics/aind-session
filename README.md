@@ -50,10 +50,10 @@ pip install aind_session
 
 ## Python
 ```python
->>> from aind_session import Session
+>>> import aind_session
 
 # Common attributes available for all sessions:
->>> session = Session('ecephys_676909_2023-12-13_13-43-40')
+>>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
 >>> session.platform
 'ecephys'
 >>> session.subject_id
@@ -71,8 +71,40 @@ datetime.datetime(2023, 12, 13, 13, 43, 40)
 >>> session.ecephys.sorted_data_asset.name
 'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
 
+# Objects refer to the original session, regardless of how they were created:
+>>> a = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+>>> b = aind_session.Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
+>>> a == b and a is not b
+True
+>>> assert len(set((a, b))) == 1, "Session objects must be hashable, based on session ID"
 
 ```
+
+
+When working in a capsule, the `Session` object can be used to find or verify attached data assets:
+```python
+>>> import aind_session
+>>> import upath # works the same way as pathlib
+
+# find all attached data dirs in the capsule:
+>>> capsule_data_dir = upath.UPath('tests/resources/capsule_tree/data') # just '/data' in an actual capsule 
+>>> attached_data_names = sorted(d.name for d in capsule_data_dir.iterdir())
+>>> attached_data_names
+['ecephys_676909_2023-12-11_14-24-35_sorted_2024-03-29_11-29-39', 'ecephys_676909_2023-12-13_13-43-40', 'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45']
+
+# get a list of unique sessions that have data attached to the capsule:
+>>> attached_sessions = sorted(set(aind_session.Session(d.name) for d in capsule_data_dir.iterdir()))
+>>> attached_sessions
+[Session('ecephys_676909_2023-12-11_14-24-35'), Session('ecephys_676909_2023-12-13_13-43-40')]
+
+# check that particular sessions have their raw data or latest sorted data assets attached:
+>>> attached_sessions[0].raw_data_asset.name in attached_data_names
+False
+>>> attached_sessions[0].ecephys.sorted_data_asset.name in attached_data_names
+True
+
+```
+
 
 # Development
 See instructions in [CONTRIBUTING.md](https://github.com/AllenNeuralDynamics/aind-session/blob/main/CONTRIBUTING.md) and the [original template](https://github.com/AllenInstitute/copier-pdm-npc/blob/main/README.md)
