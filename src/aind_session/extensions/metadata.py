@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 @aind_session.extension.register_namespace("metadata")
 class Metadata(aind_session.extension.ExtensionBaseClass):
-    """Extension for the metadata, currently fetched from jsons in raw data
+    """Extension for metadata, currently fetched from jsons in raw data
     folder.
 
     Note: files with a '.' in the name are not supported via attribute access
-    (e.g. 'metadata.nd.json'), but can be accessed via gettattr
+    (e.g. 'metadata.nd.json'), but can be accessed via `gettattr()`
     """
 
     def __getattr__(self, name: str) -> dict[str, Any]:
