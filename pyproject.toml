@@ -9,7 +9,7 @@ requires-python = ">=3.9"
 dependencies = [
     "codeocean>=0.1.5",
     "npc-io>=0.1.26",
-    "npc_session>=0.1.36",
+    "npc-session>=0.1.37",
 ]
 version = "0.1.0"
 classifiers = [
@@ -123,7 +123,7 @@ addopts = [
     "--cov",
     "--cov-report=html",
     "--cov-config=pyproject.toml",
-    "--doctest-glob=*README.md",
+    "--doctest-glob=README.md",
     "-x",
     # "-n=auto", for use with pytest-xdist
 ]
@@ -135,6 +135,7 @@ doctest_optionflags = [
 testpaths = [
     "src",
     "tests",
+    "README.md",
 ]
 
 [tool.mypy]
