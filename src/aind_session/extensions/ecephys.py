@@ -29,6 +29,12 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
             >>> session.ecephys.sorted_data_asset.id
             'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
+            >>> session.ecephys.sorted_data_asset.name
+            'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
+            >>> session.ecephys.sorted_data_asset.created
+            1709420992
+            >>> session.ecephys.clipped_dir.as_posix()
+            's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
         """
         assets = tuple(
             asset for asset in self._session.assets if self.is_sorted_data_asset(asset)
@@ -115,7 +121,41 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             )
             return False
 
-
+    @npc_io.cached_property
+    def _clipped_and_compressed_dirs(self) -> tuple[upath.UPath | None, upath.UPath | None]:
+        candidate_parent_dirs = (
+            self._session.raw_data_dir / 'ecephys', # newer location in dedicated modality folder
+            self._session.raw_data_dir, # original location in root if upload folder
+        )
+        return_paths: list[upath.UPath | None, upath.UPath | None] = [None, None]
+        for parent_dir in candidate_parent_dirs:
+            for i, name in enumerate(('clipped', 'compressed')):
+                if (path := parent_dir / f'ecephys_{name}').exists():
+                    if return_paths[i] is None:
+                        return_paths[i] = path
+                        logger.debug(f"Found {path.as_posix()}")
+                    else:
+                        logger.warning(
+                            f"Found multiple {name} dirs: using {return_paths[i].relative_to(self._session.raw_data_dir).as_posix()} over {path.relative_to(self._session.raw_data_dir).as_posix()}"
+                        )
+        return tuple(return_paths)
+    
+    @npc_io.cached_property
+    def clipped_dir(self) -> upath.UPath:
+        if (path := self._clipped_and_compressed_dirs[0]) is None:
+            raise FileNotFoundError(
+                f"No 'clipped' dir found in uploaded raw data for {self._session.id}"
+            )
+        return path
+    
+    @npc_io.cached_property
+    def compressed_dir(self) -> upath.UPath:
+        if (path := self._clipped_and_compressed_dirs[1]) is None:
+            raise FileNotFoundError(
+                f"No 'compressed' dir found in uploaded raw data for {self._session.id}"
+            )
+        return path
+        
 if __name__ == "__main__":
     from aind_session import testmod
 
