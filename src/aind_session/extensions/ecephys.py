@@ -127,7 +127,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             self._session.raw_data_dir / 'ecephys', # newer location in dedicated modality folder
             self._session.raw_data_dir, # original location in root if upload folder
         )
-        return_paths: list[upath.UPath | None, upath.UPath | None] = [None, None]
+        return_paths: list[upath.UPath | None] = [None, None]
         for parent_dir in candidate_parent_dirs:
             for i, name in enumerate(('clipped', 'compressed')):
                 if (path := parent_dir / f'ecephys_{name}').exists():
