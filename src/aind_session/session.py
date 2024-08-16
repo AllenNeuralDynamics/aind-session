@@ -22,6 +22,15 @@ class Session:
     - makes use of, and returns, objects from `https://github.com/codeocean/codeocean-sdk-python`
 
     Examples:
+    ```python
+        >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
+        
+        # the same session ID would be extracted from a path:
+        >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
+        
+        # the same session ID would be extracted from a longer string:
+        >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
+        
         # Common attributes available for all sessions:
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.platform
@@ -53,6 +62,7 @@ class Session:
         # Additional functionality for modalities added by extensions:
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.ecephys.sorted_data_asset.id                    # doctest: +SKIP
+    ```
     """
 
     def __init__(self, session_id: str) -> None:
@@ -113,8 +123,10 @@ class Session:
     
     @npc_io.cached_property
     def assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
-        """All data assets associated with the session - may be empty.
-
+        """All data assets associated with the session.
+        
+        - objects are instances of `codeocean.data_asset.DataAsset`
+        - may be empty
         - sorted by ascending creation date
         """
         return aind_session.utils.get_session_data_assets(self.id)
@@ -123,7 +135,7 @@ class Session:
     def raw_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest raw data asset associated with the session.
 
-        Raises `LookupError` if no raw data assets are found.
+        - raises `LookupError` if no raw data assets are found
         """
         assets = tuple(
             asset
@@ -146,8 +158,8 @@ class Session:
 
     @npc_io.cached_property
     def raw_data_dir(self) -> upath.UPath:
-        """Path to the raw data associated with the session, likely in an S3
-        bucket.
+        """Path to the dir containing raw data associated with the session, likely
+        in an S3 bucket.
 
         - uses latest raw data asset to get path (existence is checked)
         - if no raw data asset is found, checks for a data dir in S3

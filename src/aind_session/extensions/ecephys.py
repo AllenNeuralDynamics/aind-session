@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 @aind_session.extension.register_namespace("ecephys")
 class Ecephys(aind_session.extension.ExtensionBaseClass):
-    """Extension for the ecephys modality for handling sorted data assets, etc."""
+    """Extension providing an ecephys modality namespace, for handling sorted data assets etc."""
 
     @property
     def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
@@ -49,8 +49,8 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
     @npc_io.cached_property
     def sorted_data_dir(self) -> upath.UPath:
-        """Path to the sorted data associated with the session, likely in an S3
-        bucket.
+        """Path to the dir containing the latest sorted data associated with the
+        session, likely in an S3 bucket.
 
         - uses latest sorted data asset to get path (existence is checked)
         - if no sorted data asset is found, checks for a data dir in S3
@@ -87,7 +87,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     def is_sorted_data_asset(asset_id: str | codeocean.data_asset.DataAsset) -> bool:
         """Check if the asset is a sorted data asset.
 
-        - assumed sorted asset to be named <session-id>_sorted<unknown-suffix>
+        - assumes sorted asset to be named <session-id>_sorted<unknown-suffix>
         - does not assume platform to be `ecephys`
 
         Examples:

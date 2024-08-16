@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import functools
+import logging
 
 import upath
+
+logger = logging.getLogger(__name__)
 
 S3_DATA_BUCKET_NAMES = (
     "codeocean-s3datasetsbucket-1u41qdg42ur9",
@@ -30,6 +33,7 @@ def get_source_dir_by_name(name: str, ttl_hash: int | None = None) -> upath.UPat
     for s3_bucket in S3_DATA_BUCKET_NAMES:
         path = upath.UPath(f"s3://{s3_bucket}/{name}")
         if path.exists():
+            logger.debug(f"Found dir matching {name!r} in {path.parent.as_posix()}")
             return path
     raise FileNotFoundError(f"No dir named {name!r} found in known data buckets on S3")
 

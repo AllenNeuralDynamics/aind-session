@@ -14,7 +14,7 @@ Please check this out and make feature requests, but don't rely on the API to re
 
 
 # Aim
-This package is meant to provide easy access to session-related stuff required for common tasks in CodeOcean and beyond. 
+This package is meant to provide easy access to session information needed for common tasks, in CodeOcean and beyond. 
 
 - when interacting with the CodeOcean API, it uses and returns objects from the [official Python library](https://github.com/codeocean/codeocean-sdk-python) - we will avoid duplicating functionality provided by that package, except to make convenience functions with assumptions baked-in (for example, getting a client with environment variables and a default domain; finding all the assets for a particular session)
 - the core `Session` class should have a minimal set of methods and attributes that are common to sessions from all platforms - it should be fast to initialize and not do unnecessary work
@@ -74,12 +74,9 @@ datetime.datetime(2023, 12, 13, 13, 43, 40)
 # Objects refer to the original session, regardless of how they were created:
 >>> a = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
 >>> b = aind_session.Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
->>> a == b and a is not b
-True
->>> assert len(set((a, b))) == 1, "Session objects must be hashable, based on session ID"
-
+>>> assert a == b, "Objects are equal if they refer to the same session ID"
+# ...objects are also hashable and sortable (using their IDs)
 ```
-
 
 When working in a capsule, the `Session` object can be used to find or verify attached data assets:
 ```python

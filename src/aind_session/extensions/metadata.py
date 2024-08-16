@@ -16,24 +16,26 @@ logger = logging.getLogger(__name__)
 
 @aind_session.extension.register_namespace("metadata")
 class Metadata(aind_session.extension.ExtensionBaseClass):
-    """Extension for metadata, currently fetched from jsons in raw data
-    folder.
-
+    """Extension providing metadata on Session object.
+    
+    - currently fetches json files from raw data folder (if data has been uploaded)
+    - provides contents of json as a dict
+    
     Note: files with a '.' in the name are not supported via attribute access
     (e.g. 'metadata.nd.json'), but can be accessed via `gettattr()`
+
+    Examples:
+        >>> from aind_session import Session
+        >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.metadata.subject['genotype']
+        'Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt'
+
+        # Files with a '.' in the name must be accessed via getattr:
+        >>> content = getattr(session.metadata, 'metadata.nd')
     """
 
     def __getattr__(self, name: str) -> dict[str, Any]:
-        """Fetch metadata from the raw data folder.
-
-        Examples:
-            >>> from aind_session import Session
-            >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-            >>> session.metadata.subject['genotype']
-            'Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt'
-
-            # Files with a '.' in the name must be accessed via getattr:
-            >>> content = getattr(session.metadata, 'metadata.nd')
+        """Return contents of metadata json file from raw data folder.
         """
         try:
             _ = self.json_files
@@ -53,14 +55,14 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
 
     @property
     def json_dir(self) -> upath.UPath:
-        """Parent dir containing metadata json files"""
+        """Path of dir containing metadata json files"""
         path = self._session.raw_data_dir  # may raise FileNotFoundError
         logger.debug(f"Using {path.as_posix()} as parent dir for metadata json files")
         return path
 
     @npc_io.cached_property
     def json_files(self) -> tuple[upath.UPath, ...]:
-        """All available metadata jsons in the raw data folder.
+        """Paths of all available metadata jsons in the session's metadata dir.
 
         Examples:
             >>> from aind_session import Session
