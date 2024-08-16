@@ -64,6 +64,8 @@ datetime.datetime(2023, 12, 13, 13, 43, 40)
 '16d46411-540a-4122-b47f-8cb2a15d593a'
 >>> session.raw_data_dir.as_posix()
 's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
+>>> session.modalities
+('behavior', 'behavior_videos', 'ecephys')
 
 # Additional functionality in namespace extensions:
 >>> session.metadata.subject['genotype']

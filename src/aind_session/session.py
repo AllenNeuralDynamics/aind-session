@@ -43,7 +43,9 @@ class Session:
         '16d46411-540a-4122-b47f-8cb2a15d593a'
         >>> session.raw_data_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
-
+        >>> session.modalities
+        ('behavior', 'behavior_videos', 'ecephys')
+        
         # Should be able to handle all platforms:
         >>> session = Session('multiplane-ophys_741863_2024-08-13_09-26-41')
         >>> session.raw_data_dir.as_posix()
@@ -188,6 +190,26 @@ class Session:
             logger.debug(f"Raw data dir found for {self.id}: {raw_data_dir}")
             return raw_data_dir
 
+    @npc_io.cached_property
+    def modalities(self) -> tuple[str, ...]:
+        """Names of modalities available in the session's raw data dir.
+        
+        - modality names do not exactly match folder names
+            - if 'ecephys_compresed' and 'ecephys_clipped' are found, they're
+            represented as 'ecephys'
+        - excludes '*metadata*' folders
+        """
+        dir_names: set[str] = {d.name for d in self.raw_data_dir.iterdir() if d.is_dir()}
+        for name in ("ecephys_compressed", "ecephys_clipped"):
+            dir_names.remove(name)
+            logger.debug(f"Returning modality names with {name!r} represented as 'ecephys'")
+            dir_names.add("ecephys")
+        for term in ("metadata",):
+            for name in tuple(dir_names):
+                if term in name:
+                    dir_names.remove(name)
+                    logger.debug(f"Excluding {name!r} from modality names")
+        return tuple(sorted(dir_names))
 
 if __name__ == "__main__":
     from aind_session import testmod
