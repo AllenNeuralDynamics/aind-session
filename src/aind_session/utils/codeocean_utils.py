@@ -4,12 +4,14 @@ import contextlib
 import functools
 import logging
 import os
+import time
 import uuid
 from collections.abc import Iterable
 
 import codeocean
 import codeocean.data_asset
 import npc_session
+import requests
 import upath
 
 import aind_session.utils
@@ -18,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 @functools.cache
-def get_codeocean_client() -> codeocean.CodeOcean:
+def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
     """
     Get a CodeOcean client using environment variables.
 
@@ -43,14 +45,33 @@ def get_codeocean_client() -> codeocean.CodeOcean:
         raise KeyError(
             "`CODE_OCEAN_API_TOKEN` not found in environment variables and no `COP_` variable found",
         )
-    return codeocean.CodeOcean(
+    client = codeocean.CodeOcean(
         domain=os.getenv(
             key="CODE_OCEAN_DOMAIN",
             default="https://codeocean.allenneuraldynamics.org",
         ),
         token=token,
     )
-
+    if check_credentials:
+        logger.debug(f"Checking CodeOcean credentials for read datasets scope on {client.domain}")
+        t0 = time.time()
+        try:
+            _ = client.data_assets.search_data_assets(
+                codeocean.data_asset.DataAssetSearchParams(
+                    query=f"subject id: {366122}",
+                    limit=1,
+                    offset=0,
+                    archived=False,
+                    favorite=False,
+                )
+            )
+        except requests.exceptions.HTTPError:
+            raise ValueError(
+                f"CodeOcean API token was found in environment variables, but does not have permissions to read datasets: check `CODE_OCEAN_API_TOKEN`"
+            ) from None
+        else:
+            logger.debug(f"CodeOcean credentials verified as having read datasets scope, in {time.time() - t0:.2f}s")
+    return client
 
 def sort_data_assets(
     assets: Iterable[codeocean.data_asset.DataAsset],
