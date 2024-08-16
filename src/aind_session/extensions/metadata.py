@@ -25,6 +25,7 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
     (e.g. 'metadata.nd.json'), but can be accessed via `gettattr()`
 
     Examples:
+        ```python
         >>> from aind_session import Session
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.metadata.subject['genotype']
@@ -32,6 +33,7 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
 
         # Files with a '.' in the name must be accessed via getattr:
         >>> content = getattr(session.metadata, 'metadata.nd')
+        ```
     """
 
     def __getattr__(self, name: str) -> dict[str, Any]:

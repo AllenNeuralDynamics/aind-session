@@ -22,13 +22,13 @@ class Session:
     - makes use of, and returns, objects from `https://github.com/codeocean/codeocean-sdk-python`
 
     Examples:
-    ```python
+        ```python
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
         
-        # the same session ID would be extracted from a path:
+        # The same session ID would be extracted from a path:
         >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
         
-        # the same session ID would be extracted from a longer string:
+        # The same session ID would be extracted from a longer string:
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
         
         # Common attributes available for all sessions:
@@ -63,8 +63,8 @@ class Session:
 
         # Additional functionality for modalities added by extensions:
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.sorted_data_asset.id                    # doctest: +SKIP
-    ```
+        >>> session.ecephys.sorted_data_asset.id            # doctest: +SKIP
+        ```
     """
 
     def __init__(self, session_id: str) -> None:
