@@ -85,14 +85,16 @@ class Session:
         # parse ID to make sure it's valid -raises ValueError if no aind session
         # ID is found in the string:
         record = npc_session.AINDSessionRecord(session_id)
-        
+
         # get some attributes from the record before storing it as a regular string
         self.subject_id = str(record.subject)
         self.platform: str = record.platform
         # npc_session Date/TimeRecords are str subclasses that normalize inputs
         # and add extra attributes like .dt .year, .month, etc.
         self.date: npc_session.DateRecord = record.date
-        self.time: npc_session.TimeRecord = record.time # uses colon separator like isoformat
+        self.time: npc_session.TimeRecord = (
+            record.time
+        )  # uses colon separator like isoformat
         self.datetime: npc_session.DatetimeRecord = record.datetime
         self.dt: datetime.datetime = record.dt
         self.id = str(record.id)
@@ -248,6 +250,7 @@ class Session:
                     logger.debug(f"Excluding {name!r} from modality names")
         return tuple(sorted(dir_names))
 
+
 def get_sessions(
     subject_id: int | str,
     platform: str | None = None,
@@ -262,7 +265,7 @@ def get_sessions(
     present in name of the asset), the session's attributes are checked against
     the provided filtering arguments. If all criteria are met, the session is
     added to a set of sessions to be returned as a sorted tuple.
-    
+
     - optionally filter sessions by platform, date, or a range of dates or datetimes
     - date/datetime filtering with `start_date` and `end_date` are inclusive
     - dates and datetimes are normalized, and can be in almost any common format
@@ -274,14 +277,14 @@ def get_sessions(
             - '20231213134340'
             - '20231213_134340'
         - `datetime.date` and `datetime.datetime` objects are also accepted
-    
+
     - raises `ValueError` if any of the provided filtering arguments are invalid
     - raises `LookupError` if no sessions are found matching the criteria
-    
+
     - note on performance and CodeOcean API calls: all assets associated with a
       subject are fetched once and cached, so subsequent calls to this function
       for the same subject are fast
-      
+
     Examples
     --------
     >>> sessions = get_sessions(676909)
@@ -289,11 +292,11 @@ def get_sessions(
     'behavior'
     >>> sessions[0].date
     '2023-10-24'
-    
+
     Filter sessions by platform:
     >>> get_sessions(676909, platform='ecephys')[0].platform
     'ecephys'
-    
+
     Filter sessions by date (many formats accepted):
     >>> a = get_sessions(676909, date='2023-12-13')
     >>> b = get_sessions(676909, date='2023-12-13_13-43-40')
@@ -302,17 +305,19 @@ def get_sessions(
     >>> e = get_sessions(676909, date='20231213_134340')
     >>> a == b == c == d == e
     True
-    
+
     Filter sessions by date range:
     >>> get_sessions(676909, start_date='2023-12-13')
     (Session('ecephys_676909_2023-12-13_13-43-40'), Session('ecephys_676909_2023-12-14_12-43-11'))
     >>> get_sessions(676909, start_date='2023-12-13', end_date='2023-12-14_10-00-00')
     (Session('ecephys_676909_2023-12-13_13-43-40'),)
     """
-    parameters = {k: v for k,v in locals().items() if v}
+    parameters = {k: v for k, v in locals().items() if v}
 
     if date and (start_date or end_date):
-        raise ValueError(f"Cannot filter by specific date and date range at the same time: {parameters=}")
+        raise ValueError(
+            f"Cannot filter by specific date and date range at the same time: {parameters=}"
+        )
 
     sessions: set[Session] = set()
     logger.debug(f"Getting sessions from CodeOcean with {parameters=}")
@@ -325,7 +330,7 @@ def get_sessions(
             continue
         if date and session.date != npc_session.DateRecord(date):
             continue
-        if start_date and session.dt <= npc_session.DatetimeRecord(start_date).dt: 
+        if start_date and session.dt <= npc_session.DatetimeRecord(start_date).dt:
             continue
         if end_date and session.dt >= npc_session.DatetimeRecord(end_date).dt:
             continue
@@ -333,6 +338,7 @@ def get_sessions(
     if not sessions:
         raise LookupError(f"No sessions found matching {parameters=}")
     return tuple(sorted(sessions))
+
 
 if __name__ == "__main__":
     from aind_session import testmod
