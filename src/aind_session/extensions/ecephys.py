@@ -146,7 +146,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     def clipped_dir(self) -> upath.UPath:
         if (path := self._clipped_and_compressed_dirs[0]) is None:
             raise FileNotFoundError(
-                f"No 'clipped' dir found in uploaded raw data for {self._session.id}"
+                f"No 'clipped' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subfolder)"
             )
         return path
     
@@ -154,7 +154,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     def compressed_dir(self) -> upath.UPath:
         if (path := self._clipped_and_compressed_dirs[1]) is None:
             raise FileNotFoundError(
-                f"No 'compressed' dir found in uploaded raw data for {self._session.id}"
+                f"No 'compressed' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subfolder)"
             )
         return path
         
