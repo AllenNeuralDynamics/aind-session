@@ -29,9 +29,11 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
     - domain name defaults to `https://codeocean.allenneuraldynamics.org`, but can
       be overridden by setting `CODE_OCEAN_DOMAIN`
 
-    Examples:
-        >>> client = get_codeocean_client()
-        >>> assert client.domain == "https://codeocean.allenneuraldynamics.org"
+    Examples
+    --------
+    >>> client = get_codeocean_client()
+    >>> client.domain
+    'https://codeocean.allenneuraldynamics.org'
     """
     token = os.getenv(
         key="CODE_OCEAN_API_TOKEN",
@@ -66,7 +68,7 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
             )
         except OSError: # requests.exceptions subclass IOError/OSError
             raise ValueError(
-                f"CodeOcean API token was found in environment variables, but does not have permissions to read datasets: check `CODE_OCEAN_API_TOKEN`"
+                "CodeOcean API token was found in environment variables, but does not have permissions to read datasets: check `CODE_OCEAN_API_TOKEN`"
             ) from None
         else:
             logger.debug(f"CodeOcean credentials verified as having read datasets scope, in {time.time() - t0:.2f}s")
@@ -84,9 +86,12 @@ def get_data_asset(
 ) -> codeocean.data_asset.DataAsset:
     """Normalizes an asset ID (uuid) to a data asset model.
 
-    Examples:
-        >>> asset = get_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
-        >>> assert isinstance(asset, codeocean.data_asset.DataAsset)
+    Examples
+    --------
+    >>> asset = get_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
+    >>> assert isinstance(asset, codeocean.data_asset.DataAsset)
+    >>> asset.name
+    'ecephys_668759_2023-07-11_13-07-32'
     """
     if isinstance(asset_id, codeocean.data_asset.DataAsset):
         return asset_id
@@ -104,11 +109,12 @@ def is_raw_data_asset(asset: str | uuid.UUID | codeocean.data_asset.DataAsset) -
     - if no custom metadata or tags are present, the asset name is checked: if it
     is a session ID alone, with no suffixes, it is considered raw data
 
-    Examples:
-        >>> is_raw_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
-        True
-        >>> is_raw_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
-        False
+    Examples
+    --------
+    >>> is_raw_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
+    True
+    >>> is_raw_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
+    False
     """
     asset = get_data_asset(asset)
     if asset.custom_metadata and asset.custom_metadata.get("data level") == "raw data":
@@ -160,9 +166,10 @@ def get_data_asset_source_dir(
 
     - raises `FileNotFoundError` if a dir is not found
 
-    Examples:
-        >>> get_data_asset_source_dir('83636983-f80d-42d6-a075-09b60c6abd5e').as_posix()
-        's3://aind-ephys-data/ecephys_668759_2023-07-11_13-07-32'
+    Examples
+    --------
+    >>> get_data_asset_source_dir('83636983-f80d-42d6-a075-09b60c6abd5e').as_posix()
+    's3://aind-ephys-data/ecephys_668759_2023-07-11_13-07-32'
     """
 
     def get_dir_from_known_s3_locations(
@@ -221,9 +228,11 @@ def get_subject_data_assets(
     - provide additional search parameters to filter results, as schematized in `codeocean.data_asset.DataAssetSearchParams`:
     https://github.com/codeocean/codeocean-sdk-python/blob/4d9cf7342360820f3d9bd59470234be3e477883e/src/codeocean/data_asset.py#L199
 
-    Examples:
-        >>> assets = get_subject_data_assets(668759)
-        >>> assert len(assets) > 0
+    Examples
+    --------
+    >>> assets = get_subject_data_assets(668759)
+    >>> assets[0].name
+    'Example T1 and T2 MRI Images'
     """
     del ttl_hash  # only used for functools.cache
     for key in ("limit", "offset"):
@@ -282,20 +291,21 @@ def get_session_data_assets(
     - provide additional search parameters to filter results, as schematized in `codeocean.data_asset.DataAssetSearchParams`:
     https://github.com/codeocean/codeocean-sdk-python/blob/4d9cf7342360820f3d9bd59470234be3e477883e/src/codeocean/data_asset.py#L199
 
-    Examples:
-        # Use a full session ID
-        >>> assets = get_session_data_assets('ecephys_676909_2023-12-13_13-43-40')
-        >>> assert len(assets) > 0
-        >>> latest_asset = assets[-1]
+    Examples
+    --------
+    Use a full session ID:
+    >>> assets = get_session_data_assets('ecephys_676909_2023-12-13_13-43-40')
+    >>> assert len(assets) > 0
+    >>> latest_asset = assets[-1]
 
-        # Use a partial ID
-        >>> assets = get_session_data_assets('676909_2023-12-13')
-        >>> assert len(assets) > 0
-        >>> assert latest_asset in assets
+    Use a partial ID:
+    >>> assets = get_session_data_assets('676909_2023-12-13')
+    >>> assert len(assets) > 0
+    >>> assert latest_asset in assets
 
-        # Filter by asset type
-        >>> filtered_assets = get_session_data_assets('676909_2023-12-13', type='dataset')
-        >>> assert len(assets) > len(filtered_assets) > 0
+    Filter by asset type:
+    >>> filtered_assets = get_session_data_assets('676909_2023-12-13', type='dataset')
+    >>> assert len(assets) > len(filtered_assets) > 0
     """
     subject_id = npc_session.extract_subject(session_id_or_search_term)
     if subject_id is None:

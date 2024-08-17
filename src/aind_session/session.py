@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import datetime
 import logging
 
 import codeocean.data_asset
@@ -21,64 +22,65 @@ class Session:
 
     - makes use of, and returns, objects from `https://github.com/codeocean/codeocean-sdk-python`
 
-    Examples:
-        ```python
-        >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-        
-        # The same session ID would be extracted from a path:
-        >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
-        
-        # The same session ID would be extracted from a longer string:
-        >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
-        
-        # Common attributes available for all sessions:
-        >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.platform
-        'ecephys'
-        >>> session.subject_id
-        '676909'
-        >>> session.dt
-        datetime.datetime(2023, 12, 13, 13, 43, 40)
-        >>> session.raw_data_asset.id
-        '16d46411-540a-4122-b47f-8cb2a15d593a'
-        >>> session.raw_data_dir.as_posix()
-        's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
-        >>> session.modalities
-        ('behavior', 'behavior_videos', 'ecephys')
-        
-        # Should be able to handle all platforms:
-        >>> session = Session('multiplane-ophys_741863_2024-08-13_09-26-41')
-        >>> session.raw_data_dir.as_posix()
-        's3://aind-private-data-prod-o5171v/multiplane-ophys_741863_2024-08-13_09-26-41'
+    Examples
+    --------
+    >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
+    
+    The same session ID would be extracted from a path:
+    >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
+    
+    And the same session ID would be extracted from a longer string:
+    >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
+    
+    Common attributes available for all sessions:
+    >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
+    >>> session.platform
+    'ecephys'
+    >>> session.subject_id
+    '676909'
+    >>> session.dt
+    datetime.datetime(2023, 12, 13, 13, 43, 40)
+    >>> session.raw_data_asset.id
+    '16d46411-540a-4122-b47f-8cb2a15d593a'
+    >>> session.raw_data_dir.as_posix()
+    's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
+    >>> session.modalities
+    ('behavior', 'behavior_videos', 'ecephys')
+    
+    Should be able to handle all platforms:
+    >>> session = Session('multiplane-ophys_741863_2024-08-13_09-26-41')
+    >>> session.raw_data_dir.as_posix()
+    's3://aind-private-data-prod-o5171v/multiplane-ophys_741863_2024-08-13_09-26-41'
 
-        >>> session = Session('behavior_717121_2024-06-16_11-39-34')
-        >>> session.raw_data_dir.as_posix()
-        's3://aind-private-data-prod-o5171v/behavior_717121_2024-06-16_11-39-34'
+    >>> session = Session('behavior_717121_2024-06-16_11-39-34')
+    >>> session.raw_data_dir.as_posix()
+    's3://aind-private-data-prod-o5171v/behavior_717121_2024-06-16_11-39-34'
 
-        >>> session = Session('SmartSPIM_698260_2024-07-20_21-47-21')
-        >>> session.raw_data_dir.as_posix()
-        Traceback (most recent call last):
-        ...
-        FileNotFoundError: No raw data asset in CodeOcean and no dir in known data buckets on S3 for SmartSPIM_698260_2024-07-20_21-47-21
+    >>> session = Session('SmartSPIM_698260_2024-07-20_21-47-21')
+    >>> session.raw_data_dir.as_posix()
+    Traceback (most recent call last):
+    ...
+    FileNotFoundError: No raw data asset in CodeOcean and no dir in known data buckets on S3 for SmartSPIM_698260_2024-07-20_21-47-21
 
-        # Additional functionality for modalities added by extensions:
-        >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.sorted_data_asset.id            # doctest: +SKIP
-        ```
+    Additional functionality for modalities added by extensions:
+    >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
+    >>> session.ecephys.sorted_data_asset.id            # doctest: +SKIP
+
     """
 
     def __init__(self, session_id: str) -> None:
         """
         Initialize a session object from a session ID, or a string containing one.
 
-        Examples:
-            >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-            
-            # the same session ID would be extracted from a path:
-            >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
-            
-            # the same session ID would be extracted from a longer string:
-            >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
+        Examples
+        --------
+        >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
+        
+        The same session ID would be extracted from a path:
+        >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
+        
+        And the same session ID would be extracted from a longer string:
+        >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
         """
         # parse ID to make sure it's valid
         record = npc_session.AINDSessionRecord(session_id)
@@ -96,33 +98,30 @@ class Session:
 
     def __eq__(self, other: object) -> bool:
         """
-        Examples:
-            >>> a = Session('ecephys_676909_2023-12-13_13-43-40')
-            >>> b = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
-            >>> assert a == b and a is not b, "Session objects must be equal based on session ID"
+        >>> a = Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> b = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
+        >>> assert a == b and a is not b, "Session objects must be equal based on session ID"
         """
         if not isinstance(other, Session):
             return NotImplemented
         return self.id == other.id
-    
+
     def __hash__(self) -> int:
         """
-        Examples:
-            >>> a = Session('ecephys_676909_2023-12-13_13-43-40')
-            >>> b = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
-            >>> assert len(set((a, b))) == 1, "Session objects must be hashable, based on session ID"
+        >>> a = Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> b = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
+        >>> assert len(set((a, b))) == 1, "Session objects must be hashable, based on session ID"
         """
         return hash(self.id)
-    
+
     def __lt__(self, other: Session) -> bool:
         """
-        Examples:
-            >>> a = Session('ecephys_676909_2023-12-11_14-24-35')
-            >>> b = Session('ecephys_676909_2023-12-13_13-43-40')
-            >>> assert a < b, "Session objects must be comparable based on session ID"
+        >>> a = Session('ecephys_676909_2023-12-11_14-24-35')
+        >>> b = Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> assert a < b, "Session objects must be comparable based on session ID"
         """
         return self.id < other.id
-    
+
     @npc_io.cached_property
     def assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """All data assets associated with the session.
@@ -130,6 +129,12 @@ class Session:
         - objects are instances of `codeocean.data_asset.DataAsset`
         - may be empty
         - sorted by ascending creation date
+        
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')            
+        >>> session.assets[0].name
+        'ecephys_676909_2023-12-13_13-43-40'
         """
         return aind_session.utils.get_session_data_assets(self.id)
 
@@ -138,6 +143,16 @@ class Session:
         """Latest raw data asset associated with the session.
 
         - raises `LookupError` if no raw data assets are found
+        
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')            
+        >>> session.raw_data_asset.id
+        '16d46411-540a-4122-b47f-8cb2a15d593a'
+        >>> session.raw_data_asset.name
+        'ecephys_676909_2023-12-13_13-43-40'
+        >>> session.raw_data_asset.created
+        1702620828
         """
         assets = tuple(
             asset
@@ -147,10 +162,11 @@ class Session:
         if len(assets) == 1:
             asset = assets[0]
         elif len(assets) > 1:
-            logger.warning(
-                f"Found multiple raw data assets for {self.id}: latest asset will be used as raw data"
-            )
             asset = aind_session.utils.sort_data_assets(assets)[-1]
+            created = datetime.datetime.fromtimestamp(asset.created).isoformat()
+            logger.warning(
+                f"Found {len(assets)} raw data assets for {self.id}: latest asset will be used ({created=})"
+            )
         else:
             raise LookupError(
                 f"No raw data asset found for {self.id}. Has session data been uploaded?"
@@ -167,6 +183,12 @@ class Session:
         - if no raw data asset is found, checks for a data dir in S3
         - raises `FileNotFoundError` if no raw data assets are available to link
           to the session
+          
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')            
+        >>> session.raw_data_dir.as_posix()
+        's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
         """
         try:
             _ = self.raw_data_asset
@@ -198,6 +220,12 @@ class Session:
             - if 'ecephys_compresed' and 'ecephys_clipped' are found, they're
             represented as 'ecephys'
         - excludes '*metadata*' folders
+        
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')            
+        >>> session.modalities
+        ('behavior', 'behavior_videos', 'ecephys')
         """
         dir_names: set[str] = {d.name for d in self.raw_data_dir.iterdir() if d.is_dir()}
         for name in ("ecephys_compressed", "ecephys_clipped"):

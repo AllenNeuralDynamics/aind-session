@@ -24,9 +24,10 @@ def get_source_dir_by_name(name: str, ttl_hash: int | None = None) -> upath.UPat
 
     - raises `FileNotFoundError` if the dir is not found
 
-    Examples:
-        >>> get_source_dir_by_name('ecephys_676909_2023-12-13_13-43-40').as_posix()
-        's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
+    Examples
+    --------
+    >>> get_source_dir_by_name('ecephys_676909_2023-12-13_13-43-40').as_posix()
+    's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
     """
     del ttl_hash  # only used for functools.cache
 

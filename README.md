@@ -77,7 +77,8 @@ datetime.datetime(2023, 12, 13, 13, 43, 40)
 >>> a = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
 >>> b = aind_session.Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
 >>> assert a == b, "Objects are equal if they refer to the same session ID"
-# ...objects are also hashable and sortable (using their IDs)
+
+# Objects are also hashable and sortable (by their ID)
 ```
 
 When working in a capsule, the `Session` object can be used to find or verify attached data assets:
