@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.9, <3.12"
 dependencies = [
     "codeocean>=0.1.5",
-    "npc-io>=0.1.26",
+    "npc-io>=0.1.27",
     "npc-session>=0.1.38",
 ]
 version = "0.1.3"
