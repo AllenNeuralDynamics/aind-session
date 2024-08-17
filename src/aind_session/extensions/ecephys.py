@@ -203,7 +203,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     @npc_io.cached_property
     def sorted_probes(self) -> tuple[str, ...]:
         """Names of probes that reached the final stage of the sorting pipeline.
-        
+
         - checks for probe dirs in the session's sorted data dir
         - checks a specific dir that indicates all processing completed:
             - `sorting_precurated` was original dir name, then changed to `curated`
@@ -234,11 +234,10 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             # e.g. experiment1_Record Node 104#Neuropix-PXI-100.ProbeF-AP_recording1
             probe = path.name.split(".")[1].split("-AP")[0].split("-LFP")[0]
             probes.add(probe)
-        logger.debug(
-            f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}"
-        )
+        logger.debug(f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}")
         return tuple(sorted(probes))
-    
+
+
 if __name__ == "__main__":
     from aind_session import testmod
 
