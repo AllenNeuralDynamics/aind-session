@@ -164,5 +164,6 @@ cython_debug/
 *.sqlite
 .misc
 .ruff_cache
-
+.sandbox
 .sandbox.py
+.scratch
