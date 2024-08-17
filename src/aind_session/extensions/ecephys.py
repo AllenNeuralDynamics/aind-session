@@ -200,7 +200,45 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             )
         return path
 
+    @npc_io.cached_property
+    def sorted_probes(self) -> tuple[str, ...]:
+        """Names of probes that reached the final stage of the sorting pipeline.
+        
+        - checks for probe dirs in the session's sorted data dir
+        - checks a specific dir that indicates all processing completed:
+            - `sorting_precurated` was original dir name, then changed to `curated`
+        - probe folders named `experiment1_Record Node
+          104#Neuropix-PXI-100.ProbeF-AP_recording1` - from which `ProbeF` would
+          be extracted
 
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.sorted_probes
+        ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
+        """
+        candidate_parent_dirs = (
+            self.sorted_data_dir / "curated",
+            self.sorted_data_dir / "sorting_precurated",
+        )
+        for parent_dir in candidate_parent_dirs:
+            if parent_dir.exists():
+                break
+        else:
+            logger.warning(
+                f"No 'curated' or 'sorting_precurated' dir found in {self.sorted_data_dir.as_posix()}: assuming no probes completed processing"
+            )
+            return ()
+        probes = set()
+        for path in parent_dir.iterdir():
+            # e.g. experiment1_Record Node 104#Neuropix-PXI-100.ProbeF-AP_recording1
+            probe = path.name.split(".")[1].split("-AP")[0].split("-LFP")[0]
+            probes.add(probe)
+        logger.debug(
+            f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}"
+        )
+        return tuple(sorted(probes))
+    
 if __name__ == "__main__":
     from aind_session import testmod
 
