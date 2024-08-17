@@ -82,13 +82,18 @@ class Session:
         And the same session ID would be extracted from a longer string:
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
         """
-        # parse ID to make sure it's valid
+        # parse ID to make sure it's valid -raises ValueError if no aind session
+        # ID is found in the string:
         record = npc_session.AINDSessionRecord(session_id)
+        
         # get some attributes from the record before storing it as a regular string
         self.subject_id = str(record.subject)
         self.platform: str = record.platform
+        # npc_session Date/TimeRecords are str subclasses that normalize inputs
+        # and add extra attributes like .dt .year, .month, etc.
         self.date: npc_session.DateRecord = record.date
-        self.time: npc_session.TimeRecord = record.time
+        self.time: npc_session.TimeRecord = record.time # uses colon separator like isoformat
+        self.datetime: npc_session.DatetimeRecord = record.datetime
         self.dt: datetime.datetime = record.dt
         self.id = str(record.id)
         logger.debug(f"Created {self!r} from {session_id}")
