@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:d7a4470a472d4b06c74899ced0e336b9c5b08658512f105239f933b356f8c95b"
+content_hash = "sha256:56803407ac4f613a3bb81fad993b743c8ae7accf61af17192ec53a28badbdcb6"
 
 [[metadata.targets]]
 requires_python = ">=3.9,<3.12"
@@ -1011,7 +1011,7 @@ files = [
 
 [[package]]
 name = "npc-session"
-version = "0.1.38"
+version = "0.1.39"
 requires_python = ">=3.9"
 summary = "Basic tools for parsing subject, session, date and time associated with data from the Mindscope Neuropixels team, in the cloud."
 groups = ["default"]
@@ -1019,8 +1019,8 @@ dependencies = [
     "typing-extensions>=4.7.1",
 ]
 files = [
-    {file = "npc_session-0.1.38-py3-none-any.whl", hash = "sha256:de15dcc20b3df3de60cfc094500d3a0837d418d94a66895413b30d4e4bb37453"},
-    {file = "npc_session-0.1.38.tar.gz", hash = "sha256:946204b720354f47a29d400443a8faf6ad92f9b266bd2c91309cbf931a149932"},
+    {file = "npc_session-0.1.39-py3-none-any.whl", hash = "sha256:b369ff7c71d9c2119fb18a4aa0f2a8bbab01c7a73ec3e67a0a0f94e594e5cbc3"},
+    {file = "npc_session-0.1.39.tar.gz", hash = "sha256:b32243cb6beb58802bae63208937bca6795726c483bef3354465c06f2ee11526"},
 ]
 
 [[package]]
