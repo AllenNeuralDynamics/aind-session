@@ -131,14 +131,16 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         for parent_dir in candidate_parent_dirs:
             for i, name in enumerate(('clipped', 'compressed')):
                 if (path := parent_dir / f'ecephys_{name}').exists():
-                    if return_paths[i] is None:
+                    if (existing_path := return_paths[i]) is None:
                         return_paths[i] = path
                         logger.debug(f"Found {path.as_posix()}")
                     else:
+                        assert existing_path is not None
                         logger.warning(
-                            f"Found multiple {name} dirs: using {return_paths[i].relative_to(self._session.raw_data_dir).as_posix()} over {path.relative_to(self._session.raw_data_dir).as_posix()}"
+                            f"Found multiple {name} dirs: using {existing_path.relative_to(self._session.raw_data_dir).as_posix()} over {path.relative_to(self._session.raw_data_dir).as_posix()}"
                         )
-        return tuple(return_paths)
+        assert len(return_paths) == 2
+        return return_paths[0], return_paths[1]
     
     @npc_io.cached_property
     def clipped_dir(self) -> upath.UPath:
