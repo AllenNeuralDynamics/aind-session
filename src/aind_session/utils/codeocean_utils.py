@@ -54,7 +54,9 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
         token=token,
     )
     if check_credentials:
-        logger.debug(f"Checking CodeOcean credentials for read datasets scope on {client.domain}")
+        logger.debug(
+            f"Checking CodeOcean credentials for read datasets scope on {client.domain}"
+        )
         t0 = time.time()
         try:
             _ = client.data_assets.search_data_assets(
@@ -66,13 +68,16 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
                     favorite=False,
                 )
             )
-        except OSError: # requests.exceptions subclass IOError/OSError
+        except OSError:  # requests.exceptions subclass IOError/OSError
             raise ValueError(
                 "CodeOcean API token was found in environment variables, but does not have permissions to read datasets: check `CODE_OCEAN_API_TOKEN`"
             ) from None
         else:
-            logger.debug(f"CodeOcean credentials verified as having read datasets scope, in {time.time() - t0:.2f}s")
+            logger.debug(
+                f"CodeOcean credentials verified as having read datasets scope, in {time.time() - t0:.2f}s"
+            )
     return client
+
 
 def sort_data_assets(
     assets: Iterable[codeocean.data_asset.DataAsset],

@@ -25,13 +25,13 @@ class Session:
     Examples
     --------
     >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-    
+
     The same session ID would be extracted from a path:
     >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
-    
+
     And the same session ID would be extracted from a longer string:
     >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
-    
+
     Common attributes available for all sessions:
     >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
     >>> session.platform
@@ -46,7 +46,7 @@ class Session:
     's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
     >>> session.modalities
     ('behavior', 'behavior_videos', 'ecephys')
-    
+
     Should be able to handle all platforms:
     >>> session = Session('multiplane-ophys_741863_2024-08-13_09-26-41')
     >>> session.raw_data_dir.as_posix()
@@ -75,10 +75,10 @@ class Session:
         Examples
         --------
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-        
+
         The same session ID would be extracted from a path:
         >>> session = Session('/root/capsule/aind_session/ecephys_676909_2023-12-13_13-43-40')
-        
+
         And the same session ID would be extracted from a longer string:
         >>> session = Session('ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45')
         """
@@ -125,14 +125,14 @@ class Session:
     @npc_io.cached_property
     def assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """All data assets associated with the session.
-        
+
         - objects are instances of `codeocean.data_asset.DataAsset`
         - may be empty
         - sorted by ascending creation date
-        
+
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')            
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.assets[0].name
         'ecephys_676909_2023-12-13_13-43-40'
         """
@@ -143,10 +143,10 @@ class Session:
         """Latest raw data asset associated with the session.
 
         - raises `LookupError` if no raw data assets are found
-        
+
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')            
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.raw_data_asset.id
         '16d46411-540a-4122-b47f-8cb2a15d593a'
         >>> session.raw_data_asset.name
@@ -183,10 +183,10 @@ class Session:
         - if no raw data asset is found, checks for a data dir in S3
         - raises `FileNotFoundError` if no raw data assets are available to link
           to the session
-          
+
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')            
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.raw_data_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
         """
@@ -215,22 +215,26 @@ class Session:
     @npc_io.cached_property
     def modalities(self) -> tuple[str, ...]:
         """Names of modalities available in the session's raw data dir.
-        
+
         - modality names do not exactly match folder names
             - if 'ecephys_compresed' and 'ecephys_clipped' are found, they're
             represented as 'ecephys'
         - excludes '*metadata*' folders
-        
+
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')            
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.modalities
         ('behavior', 'behavior_videos', 'ecephys')
         """
-        dir_names: set[str] = {d.name for d in self.raw_data_dir.iterdir() if d.is_dir()}
+        dir_names: set[str] = {
+            d.name for d in self.raw_data_dir.iterdir() if d.is_dir()
+        }
         for name in ("ecephys_compressed", "ecephys_clipped"):
             dir_names.remove(name)
-            logger.debug(f"Returning modality names with {name!r} represented as 'ecephys'")
+            logger.debug(
+                f"Returning modality names with {name!r} represented as 'ecephys'"
+            )
             dir_names.add("ecephys")
         for term in ("metadata",):
             for name in tuple(dir_names):
@@ -238,6 +242,7 @@ class Session:
                     dir_names.remove(name)
                     logger.debug(f"Excluding {name!r} from modality names")
         return tuple(sorted(dir_names))
+
 
 if __name__ == "__main__":
     from aind_session import testmod

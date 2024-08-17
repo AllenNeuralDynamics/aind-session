@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class Ecephys(aind_session.extension.ExtensionBaseClass):
     """Extension providing an ecephys modality namespace, for handling sorted data
     assets etc.
-    
+
     Examples
     --------
     >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
@@ -39,7 +39,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')    
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.ecephys.sorted_data_asset.id
         'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
         >>> session.ecephys.sorted_data_asset.name
@@ -54,7 +54,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             asset = assets[0]
         elif len(assets) > 1:
             asset = aind_session.utils.sort_data_assets(assets)[-1]
-            created = datetime.datetime.fromtimestamp(asset.created).isoformat(sep=' ')
+            created = datetime.datetime.fromtimestamp(asset.created).isoformat(sep=" ")
             logger.warning(
                 f"Found {len(assets)} sorted data assets for {self._session.id}: most recent asset will be used ({created=})"
             )
@@ -77,7 +77,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')    
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.ecephys.sorted_data_dir.as_posix()
         's3://codeocean-s3datasetsbucket-1u41qdg42ur9/a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
         """
@@ -110,7 +110,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')    
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.ecephys.is_sorted_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
         True
         >>> session.ecephys.is_sorted_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
@@ -136,15 +136,18 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             return False
 
     @npc_io.cached_property
-    def _clipped_and_compressed_dirs(self) -> tuple[upath.UPath | None, upath.UPath | None]:
+    def _clipped_and_compressed_dirs(
+        self,
+    ) -> tuple[upath.UPath | None, upath.UPath | None]:
         candidate_parent_dirs = (
-            self._session.raw_data_dir / 'ecephys', # newer location in dedicated modality folder
-            self._session.raw_data_dir, # original location in root if upload folder
+            self._session.raw_data_dir
+            / "ecephys",  # newer location in dedicated modality folder
+            self._session.raw_data_dir,  # original location in root if upload folder
         )
         return_paths: list[upath.UPath | None] = [None, None]
         for parent_dir in candidate_parent_dirs:
-            for i, name in enumerate(('clipped', 'compressed')):
-                if (path := parent_dir / f'ecephys_{name}').exists():
+            for i, name in enumerate(("clipped", "compressed")):
+                if (path := parent_dir / f"ecephys_{name}").exists():
                     if (existing_path := return_paths[i]) is None:
                         return_paths[i] = path
                         logger.debug(f"Found {path.as_posix()}")
@@ -160,13 +163,13 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     def clipped_dir(self) -> upath.UPath:
         """Path to the dir containing original Open Ephys recording data, with
         truncated `continuous.dat` files.
-        
-        - originally located in the root of the session's raw data dir 
+
+        - originally located in the root of the session's raw data dir
         - for later sessions (2024 onwards), located in an `ecephys` subdirectory
-        
+
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')    
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.ecephys.clipped_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
         """
@@ -181,13 +184,13 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         """
         Path to the dir containing compressed zarr format versions of Open Ephys
         recording data (AP and LFP).
-        
+
         - originally located in the root of the session's raw data dir
         - for later sessions (2024 onwards), located in an `ecephys` subdirectory
-        
+
         Examples
         --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')    
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.ecephys.compressed_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_compressed'
         """
@@ -196,6 +199,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 f"No 'compressed' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
             )
         return path
+
 
 if __name__ == "__main__":
     from aind_session import testmod

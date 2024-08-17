@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 @aind_session.extension.register_namespace("metadata")
 class Metadata(aind_session.extension.ExtensionBaseClass):
     """Extension providing metadata on Session object.
-    
+
     - currently fetches json files from raw data folder (if data has been uploaded)
     - provides contents of json as a dict
-    
+
     Note: files with a '.' in the name are not supported via attribute access
     (e.g. 'metadata.nd.json'), but can be accessed via `gettattr()`
 
@@ -35,8 +35,7 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
     """
 
     def __getattr__(self, name: str) -> dict[str, Any]:
-        """Return contents of metadata json file from raw data folder.
-        """
+        """Return contents of metadata json file from raw data folder."""
         try:
             _ = self.json_files
         except FileNotFoundError:
@@ -56,7 +55,7 @@ class Metadata(aind_session.extension.ExtensionBaseClass):
     @property
     def json_dir(self) -> upath.UPath:
         """Path to dir containing metadata json files.
-        
+
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
