@@ -84,10 +84,10 @@ class Session:
         record = npc_session.AINDSessionRecord(session_id)
         # get some attributes from the record before storing it as a regular string
         self.subject_id = str(record.subject)
-        self.platform = record.platform
-        self.date = record.date
-        self.time = record.time
-        self.dt = record.dt
+        self.platform: str = record.platform
+        self.date: npc_session.DateRecord = record.date
+        self.time: npc_session.TimeRecord = record.time
+        self.dt: datetime.datetime = record.dt
         self.id = str(record.id)
         logger.debug(f"Created {self!r} from {session_id}")
 
