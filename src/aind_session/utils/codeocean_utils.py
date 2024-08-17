@@ -11,7 +11,6 @@ from collections.abc import Iterable
 import codeocean
 import codeocean.data_asset
 import npc_session
-import requests
 import upath
 
 import aind_session.utils
@@ -65,7 +64,7 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
                     favorite=False,
                 )
             )
-        except requests.exceptions.HTTPError:
+        except OSError: # requests.exceptions subclass IOError/OSError
             raise ValueError(
                 f"CodeOcean API token was found in environment variables, but does not have permissions to read datasets: check `CODE_OCEAN_API_TOKEN`"
             ) from None
