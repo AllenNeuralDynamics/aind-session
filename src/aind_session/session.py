@@ -243,6 +243,91 @@ class Session:
                     logger.debug(f"Excluding {name!r} from modality names")
         return tuple(sorted(dir_names))
 
+def get_sessions(
+    subject_id: int | str,
+    platform: str | None = None,
+    date: str | datetime.date | datetime.datetime | None = None,
+    start_date: str | datetime.date | datetime.datetime | None = None,
+    end_date: str | datetime.date | datetime.datetime | None = None,
+) -> tuple[Session, ...]:
+    """Return all sessions associated with a subject ID, sorted by ascending date.
+
+    Looks up all assets associated with the subject ID, and creates `Session`
+    objects based on their names. If successful (i.e. an aind session ID is
+    present in name of the asset), the session's attributes are checked against
+    the provided filtering arguments. If all criteria are met, the session is
+    added to a set of sessions to be returned as a sorted tuple.
+    
+    - optionally filter sessions by platform, date, or a range of dates or datetimes
+    - date/datetime filtering with `start_date` and `end_date` are inclusive
+    - dates and datetimes are normalized, and can be in almost any common format
+        - hyphen and colon separators are accepted but not required:
+            - '2023-12-13'
+            - '2023-12-13 13:43:40'
+            - '2023-12-13_13-43-40'
+            - '20231213'
+            - '20231213134340'
+            - '20231213_134340'
+        - `datetime.date` and `datetime.datetime` objects are also accepted
+    
+    - raises `ValueError` if any of the provided filtering arguments are invalid
+    - raises `LookupError` if no sessions are found matching the criteria
+    
+    - note on performance and CodeOcean API calls: all assets associated with a
+      subject are fetched once and cached, so subsequent calls to this function
+      for the same subject are fast
+      
+    Examples
+    --------
+    >>> sessions = get_sessions(676909)
+    >>> sessions[0].platform
+    'behavior'
+    >>> sessions[0].date
+    '2023-10-24'
+    
+    Filter sessions by platform:
+    >>> get_sessions(676909, platform='ecephys')[0].platform
+    'ecephys'
+    
+    Filter sessions by date (many formats accepted):
+    >>> a = get_sessions(676909, date='2023-12-13')
+    >>> b = get_sessions(676909, date='2023-12-13_13-43-40')
+    >>> c = get_sessions(676909, date='2023-12-13 13:43:40')
+    >>> d = get_sessions(676909, date='20231213')
+    >>> e = get_sessions(676909, date='20231213_134340')
+    >>> a == b == c == d == e
+    True
+    
+    Filter sessions by date range:
+    >>> get_sessions(676909, start_date='2023-12-13')
+    (Session('ecephys_676909_2023-12-13_13-43-40'), Session('ecephys_676909_2023-12-14_12-43-11'))
+    >>> get_sessions(676909, start_date='2023-12-13', end_date='2023-12-14_10-00-00')
+    (Session('ecephys_676909_2023-12-13_13-43-40'),)
+    """
+    parameters = {k: v for k,v in locals().items() if v}
+
+    if date and (start_date or end_date):
+        raise ValueError(f"Cannot filter by specific date and date range at the same time: {parameters=}")
+
+    sessions: set[Session] = set()
+    logger.debug(f"Getting sessions from CodeOcean with {parameters=}")
+    for asset in aind_session.utils.get_subject_data_assets(subject_id):
+        try:
+            session = Session(asset.name)
+        except ValueError:
+            continue
+        if platform and session.platform != platform:
+            continue
+        if date and session.date != npc_session.DateRecord(date):
+            continue
+        if start_date and session.dt <= npc_session.DatetimeRecord(start_date).dt: 
+            continue
+        if end_date and session.dt >= npc_session.DatetimeRecord(end_date).dt:
+            continue
+        sessions.add(session)
+    if not sessions:
+        raise LookupError(f"No sessions found matching {parameters=}")
+    return tuple(sorted(sessions))
 
 if __name__ == "__main__":
     from aind_session import testmod
