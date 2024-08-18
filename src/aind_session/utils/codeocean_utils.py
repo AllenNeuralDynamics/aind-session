@@ -237,7 +237,7 @@ def get_subject_data_assets(
 
     Examples
     --------
-    
+
     Search with a subject ID as str or int (will be cast as str):
     >>> assets = get_subject_data_assets(668759)
     >>> type(assets[0])
@@ -248,7 +248,7 @@ def get_subject_data_assets(
     'Example T1 and T2 MRI Images'
     >>> assets[0].tags
     ['T1', 'T2', 'MRI', 'demo']
-    
+
     Additional search parameters can be supplied as kwargs:
     >>> filtered_assets = get_subject_data_assets(668759, type='dataset')
     """
@@ -268,6 +268,7 @@ def get_subject_data_assets(
         )
     return assets
 
+
 def get_data_asset_search_query(
     name: str | None = None,
     subject_id: str | int | None = None,
@@ -277,26 +278,31 @@ def get_data_asset_search_query(
     """
     Create a search string for feeding into the 'query' field when searching for
     data assets in the CodeOcean API.
-    
+
     Note: current understanding of the operation of the 'query' field is largely
     undocumented, so the following is based on empirical testing and is not
-    exhaustive. 
+    exhaustive.
     """
-    params = {k:v for k,v in locals().items() if v not in ("", None)} # careful not to exclude 0s
+    params = {
+        k: v for k, v in locals().items() if v not in ("", None)
+    }  # careful not to exclude 0s
     query: list[str] = []
+
     def append(param_name: str, value: Any) -> None:
         query.append(f'{param_name.lower().replace("_", " ")}:{value}')
-    for k,v in params.items():
+
+    for k, v in params.items():
         if k == "tag":
             # the CO API supports searching tags multiple times in the same 'query'
             tags = v if (isinstance(v, Iterable) and not isinstance(v, str)) else (v,)
             for t in tags:
                 append(k, t)
         else:
-            append(k,v)
+            append(k, v)
     query_text = " ".join(query)
     logger.debug(f"Generated search query: {query_text!r}")
     return query_text
+
 
 def search_data_assets(
     search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
@@ -306,7 +312,7 @@ def search_data_assets(
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
     """A wrapper around `codeocean.data_assets.search_data_assets` that makes it
     slightly easier to use.
-    
+
     - handles pagination and fetches all available assets matching search parameters
     - returns `DataAsset` objects instead of `DataAssetSearchResults`
         - `DataAssetSearchResults` only exists to store assets and signal `has_more`
@@ -315,7 +321,7 @@ def search_data_assets(
         - `favorite=False`
     - raises a `ValueError` if the page limit is reached, unless
       `raise_on_page_limit=False`
-    
+
     Examples
     --------
     >>> assets = search_data_assets({"query": "subject id:676909", "sort_field": "created", "sort_order": "asc"})
@@ -341,7 +347,9 @@ def search_data_assets(
     updated_params.setdefault("archived", False)
     updated_params.setdefault("favorite", False)
 
-    logger.debug(f"Fetching data assets results matching search parameters: {updated_params}")
+    logger.debug(
+        f"Fetching data assets results matching search parameters: {updated_params}"
+    )
 
     assets: list[codeocean.data_asset.DataAsset] = []
     page = 0
@@ -379,7 +387,7 @@ def get_session_data_assets(
     Get all data assets whose names start with the search term.
 
     - assets are sorted by ascending creation date
-    - searching with a partial session ID is not reliable: 
+    - searching with a partial session ID is not reliable:
       - use `aind_session.get_sessions()` to search for sessions instead, which
       can filter on subject ID, platform, and date range
       - then examine the `assets` attribute on each returned object
@@ -419,6 +427,7 @@ def get_session_data_assets(
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
     assets = search_data_assets(search_params)
     return assets
+
 
 if __name__ == "__main__":
     from aind_session import testmod

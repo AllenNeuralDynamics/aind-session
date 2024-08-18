@@ -44,8 +44,8 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
         >>> session.ecephys.sorted_data_assets[0].created
         1702783011
-        
-        Empty 
+
+        Empty
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-39')
         >>> session.ecephys.sorted_data_assets
         ()
@@ -55,7 +55,9 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             for asset in self._session.data_assets
             if self.is_sorted_data_asset(asset)
         )
-        logger.debug(f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}")
+        logger.debug(
+            f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}"
+        )
         return assets
 
     @npc_io.cached_property

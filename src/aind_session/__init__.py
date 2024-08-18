@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 __version__ = importlib.metadata.version("aind_session")
 logger.debug(f"{__name__}.{__version__ = }")
 
+
 def testmod(**testmod_kwargs) -> doctest.TestResults:
     """
     Run doctests for the module, configured to ignore exception details and
