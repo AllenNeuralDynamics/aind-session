@@ -235,9 +235,20 @@ def get_subject_data_assets(
 
     Examples
     --------
+    
+    Search with a subject ID as str or int (will be cast as str):
     >>> assets = get_subject_data_assets(668759)
+    >>> type(assets[0])
+    <class 'codeocean.data_asset.DataAsset'>
+    >>> assets[0].created
+    1673996872
     >>> assets[0].name
     'Example T1 and T2 MRI Images'
+    >>> assets[0].tags
+    ['T1', 'T2', 'MRI', 'demo']
+    
+    Additional search parameters can be supplied as kwargs:
+    >>> filtered_assets = get_subject_data_assets(668759, type='dataset')
     """
     del ttl_hash  # only used for functools.cache
     for key in ("limit", "offset"):
