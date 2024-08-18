@@ -6,19 +6,15 @@ import doctest
 import importlib.metadata
 import logging
 
-import aind_session.extensions
-from aind_session.session import *
-
 # import functions from submodules here:
-from aind_session.utils.codeocean_utils import *
-
-_ = aind_session.extensions
+import aind_session.extensions  # noqa
+from aind_session.session import *
+from aind_session.utils import *
 
 logger = logging.getLogger(__name__)
 
 __version__ = importlib.metadata.version("aind_session")
 logger.debug(f"{__name__}.{__version__ = }")
-
 
 def testmod(**testmod_kwargs) -> doctest.TestResults:
     """
