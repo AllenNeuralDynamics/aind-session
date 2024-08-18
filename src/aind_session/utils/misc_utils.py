@@ -16,9 +16,3 @@ def get_ttl_hash(seconds: float = 2 * 60) -> int:
     From https://stackoverflow.com/a/55900800
     """
     return round(time.time() / seconds)
-
-
-def get_session_record(
-    value: str | npc_session.AINDSessionRecord,
-) -> npc_session.AINDSessionRecord:
-    return npc_session.AINDSessionRecord(value)
