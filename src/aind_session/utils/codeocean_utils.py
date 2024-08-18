@@ -318,7 +318,12 @@ def search_data_assets(
     
     Examples
     --------
-    >>> search_data_assets({"query": "subject id:676909", "sort_field": "created", "sort_order": "asc"})[0].created
+    >>> assets = search_data_assets({"query": "subject id:676909", "sort_field": "created", "sort_order": "asc"})
+    >>> type(assets[0])
+    <class 'codeocean.data_asset.DataAsset'>
+    >>> assets[0].name
+    'Example T1 and T2 MRI Images'
+    >>> assets[0].created
     1673996872
     """
     if isinstance(search_params, codeocean.data_asset.DataAssetSearchParams):
@@ -414,7 +419,6 @@ def get_session_data_assets(
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
     assets = search_data_assets(search_params)
     return assets
-
 
 if __name__ == "__main__":
     from aind_session import testmod
