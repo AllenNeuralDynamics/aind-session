@@ -32,6 +32,33 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     """
 
     @npc_io.cached_property
+    def sorted_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
+        """All sorted data assets associated with the session (may be empty).
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.sorted_data_assets[0].id
+        '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
+        >>> session.ecephys.sorted_data_assets[0].name
+        'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
+        >>> session.ecephys.sorted_data_assets[0].created
+        1702783011
+        
+        Empty 
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-39')
+        >>> session.ecephys.sorted_data_assets
+        ()
+        """
+        assets = tuple(
+            asset
+            for asset in self._session.assets
+            if self.is_sorted_data_asset(asset)
+        )
+        logger.debug(f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}")
+        return assets
+    
+    @npc_io.cached_property
     def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest sorted data asset associated with the session.
 
@@ -40,23 +67,21 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.sorted_data_asset.id
+        >>> asset = session.ecephys.sorted_data_asset
+        >>> asset.id        # doctest: +SKIP
         'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
-        >>> session.ecephys.sorted_data_asset.name
+        >>> asset.name      # doctest: +SKIP
         'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
-        >>> session.ecephys.sorted_data_asset.created
+        >>> asset.created   # doctest: +SKIP
         1709420992
         """
-        assets = tuple(
-            asset for asset in self._session.assets if self.is_sorted_data_asset(asset)
-        )
-        if len(assets) == 1:
-            asset = assets[0]
-        elif len(assets) > 1:
-            asset = aind_session.utils.sort_data_assets(assets)[-1]
+        if len(self.sorted_data_assets) == 1:
+            asset = self.sorted_data_assets[0]
+        elif len(self.sorted_data_assets) > 1:
+            asset = aind_session.utils.sort_data_assets(self.sorted_data_assets)[-1]
             created = datetime.datetime.fromtimestamp(asset.created).isoformat(sep=" ")
             logger.warning(
-                f"Found {len(assets)} sorted data assets for {self._session.id}: most recent asset will be used ({created=})"
+                f"Found {len(self.sorted_data_assets)} sorted data assets for {self._session.id}: most recent asset will be used ({created=})"
             )
         else:
             raise LookupError(
