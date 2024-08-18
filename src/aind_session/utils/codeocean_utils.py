@@ -7,8 +7,10 @@ import os
 import time
 import uuid
 from collections.abc import Iterable
+from typing import Any
 
 import codeocean
+import codeocean.components
 import codeocean.data_asset
 import npc_session
 import upath
@@ -220,15 +222,15 @@ def get_data_asset_source_dir(
 @functools.cache
 def get_subject_data_assets(
     subject_id: str | int,
-    page_size: int = 200,
-    max_pages: int = 100,
-    offset: int = 0,
     ttl_hash: int | None = None,
-    **search_parameters,
+    **search_params,
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
     """
     Get all assets associated with a subject ID.
 
+    - uses the `subject` field in asset metadata
+    - `subject_id` will be cast to a string for searching
+    - subject ID is not required to be a labtracks MID
     - assets are sorted by ascending creation date
     - provide additional search parameters to filter results, as schematized in `codeocean.data_asset.DataAssetSearchParams`:
     https://github.com/codeocean/codeocean-sdk-python/blob/4d9cf7342360820f3d9bd59470234be3e477883e/src/codeocean/data_asset.py#L199
@@ -251,48 +253,115 @@ def get_subject_data_assets(
     >>> filtered_assets = get_subject_data_assets(668759, type='dataset')
     """
     del ttl_hash  # only used for functools.cache
-    for key in ("limit", "offset"):
-        if key in search_parameters:
-            logger.warning(
-                f"Removing {key} from user-provided search_parameters: pagination is handled by this function"
-            )
-            search_parameters.pop(key)
-    if "query" in search_parameters:
-        logger.warning(
-            "Removing query from user-provided search_parameters: subject ID is used to assets"
+
+    if "query" in search_params:
+        raise ValueError(
+            "Cannot provide 'query' as a search parameter: a new query will be created using 'subject id' field to search for assets"
         )
-        search_parameters.pop("query")
+    search_params["query"] = get_data_asset_search_query(subject_id=subject_id)
+    search_params["sort_field"] = codeocean.data_asset.DataAssetSortBy.Created
+    search_params["sort_order"] = codeocean.components.SortOrder.Ascending
+    assets = search_data_assets(search_params)
+    if not assets and not npc_session.extract_subject(str(subject_id)):
+        logger.warning(
+            f"No assets were found for {subject_id=}, which does not appear to be a Labtracks MID"
+        )
+    return assets
+
+def get_data_asset_search_query(
+    name: str | None = None,
+    subject_id: str | int | None = None,
+    tag: str | Iterable[str] | None = None,
+    description: str | None = None,
+) -> str:
+    """
+    Create a search string for feeding into the 'query' field when searching for
+    data assets in the CodeOcean API.
+    
+    Note: current understanding of the operation of the 'query' field is largely
+    undocumented, so the following is based on empirical testing and is not
+    exhaustive. 
+    """
+    params = {k:v for k,v in locals().items() if v not in ("", None)} # careful not to exclude 0s
+    query: list[str] = []
+    def append(param_name: str, value: Any) -> None:
+        query.append(f'{param_name.lower().replace("_", " ")}:{value}')
+    for k,v in params.items():
+        if k == "tag":
+            # the CO API supports searching tags multiple times in the same 'query'
+            tags = v if (isinstance(v, Iterable) and not isinstance(v, str)) else (v,)
+            for t in tags:
+                append(k, t)
+        else:
+            append(k,v)
+    query_text = " ".join(query)
+    logger.debug(f"Generated search query: {query_text!r}")
+    return query_text
+
+def search_data_assets(
+    search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
+    page_size: int = 100,
+    max_pages: int = 1000,
+    raise_on_page_limit: bool = True,
+) -> tuple[codeocean.data_asset.DataAsset, ...]:
+    """A wrapper around `codeocean.data_assets.search_data_assets` that makes it
+    slightly easier to use.
+    
+    - handles pagination and fetches all available assets matching search parameters
+    - returns `DataAsset` objects instead of `DataAssetSearchResults`
+        - `DataAssetSearchResults` only exists to store assets and signal `has_more`
+    - fills in required fields with sensible defaults if not provided:
+        - `archived=False`
+        - `favorite=False`
+    - raises a `ValueError` if the page limit is reached, unless
+      `raise_on_page_limit=False`
+    
+    Examples
+    --------
+    >>> search_data_assets({"query": "subject id:676909", "sort_field": "created", "sort_order": "asc"})[0].created
+    1673996872
+    """
+    if isinstance(search_params, codeocean.data_asset.DataAssetSearchParams):
+        updated_params = search_params.to_dict()
+    else:
+        updated_params = search_params.copy()
+    for key in ("limit", "offset"):
+        if key in search_params:
+            logger.warning(
+                f"Removing {key} from provided search parameters: pagination is handled by this function"
+            )
+            updated_params.pop(key)
 
     # set required fields if not provided
-    search_parameters.setdefault("archived", False)
-    search_parameters.setdefault("favorite", False)
+    updated_params.setdefault("archived", False)
+    updated_params.setdefault("favorite", False)
 
-    try:
-        _ = npc_session.extract_subject(str(subject_id))
-    except ValueError:
-        logger.warning(
-            f"Subject ID {subject_id=} does not appear to be a Labtracks MID: assets may not be found"
-        )
+    logger.debug(f"Fetching data assets results matching search parameters: {updated_params}")
 
-    results: list[codeocean.data_asset.DataAsset] = []
-    while offset < max_pages:
+    assets: list[codeocean.data_asset.DataAsset] = []
+    page = 0
+    while page < max_pages:
         search_results = get_codeocean_client().data_assets.search_data_assets(
             codeocean.data_asset.DataAssetSearchParams(
-                query=f"subject id: {subject_id}",
                 limit=page_size,
-                offset=offset * page_size,
-                **search_parameters,
+                offset=page * page_size,
+                **updated_params,
             )
         )
-        results.extend(search_results.results)
+        assets.extend(search_results.results)
         if not search_results.has_more:
             break
-        offset += 1
+        page += 1
     else:
-        raise TimeoutError(
-            f"Max pages reached fetching codeocean data assets for {subject_id=}: {max_pages=}"
+        if raise_on_page_limit:
+            raise ValueError(
+                f"Reached page limit fetching data asset search results: try increasing parameters ({max_pages=}, {page_size=}), narrowing the search, or setting `raise_on_page_limit=False`"
+            )
+        logger.warning(
+            f"Reached page limit fetching data asset search results: returning {len(assets)} assets, but others exist"
         )
-    return sort_data_assets(results)
+    logger.debug(f"Search returned {len(assets)} data assets")
+    return tuple(assets)
 
 
 def get_session_data_assets(
