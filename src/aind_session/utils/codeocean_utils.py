@@ -371,10 +371,13 @@ def get_session_data_assets(
     **search_params,
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
     """
-    Get all data assets that include the search term in their name.
+    Get all data assets whose names start with the search term.
 
-    - currently requires search term to include a subject ID (Labtracks MID) in order to find assets
     - assets are sorted by ascending creation date
+    - searching with a partial session ID is not reliable: 
+      - use `aind_session.get_sessions()` to search for sessions instead, which
+      can filter on subject ID, platform, and date range
+      - then examine the `assets` attribute on each returned object
     - provide additional search parameters to filter results, as schematized in `codeocean.data_asset.DataAssetSearchParams`:
     https://github.com/codeocean/codeocean-sdk-python/blob/4d9cf7342360820f3d9bd59470234be3e477883e/src/codeocean/data_asset.py#L199
 
@@ -382,22 +385,26 @@ def get_session_data_assets(
     --------
     Use a full session ID:
     >>> assets = get_session_data_assets('ecephys_676909_2023-12-13_13-43-40')
-    >>> assert len(assets) > 0
-    >>> latest_asset = assets[-1]
+    >>> type(assets[0])
+    <class 'codeocean.data_asset.DataAsset'>
+    >>> assets[0].created
+    1702620828
+    >>> assets[0].name
+    'ecephys_676909_2023-12-13_13-43-40'
+    >>> assets[0].tags                    # doctest: +SKIP
+    ['ecephys', 'raw', '676909']
 
-    Use a partial ID:
-    >>> assets = get_session_data_assets('676909_2023-12-13')
-    >>> assert len(assets) > 0
-    >>> assert latest_asset in assets
-
-    Filter by asset type:
-    >>> filtered_assets = get_session_data_assets('676909_2023-12-13', type='dataset')
-    >>> assert len(assets) > len(filtered_assets) > 0
+    Additional search parameters can be supplied as kwargs:
+    >>> filtered_assets = get_session_data_assets('ecephys_676909_2023-12-13_13-43-40', type='dataset')
     >>> assert len(filtered_assets) > 0
     """
     del ttl_hash  # only used for functools.cache
-    subject_id = npc_session.extract_subject(session_id_or_search_term)
-    if subject_id is None:
+    try:
+        session_id = npc_session.AINDSessionRecord(session_id)
+    except ValueError as exc:
+        raise ValueError(
+            "Querying the CodeOcean API with a partial session ID is not reliable: use `aind_session.get_sessions()` to search, then examine the `assets` attribute on each returned object"
+        ) from exc
     if "query" in search_params:
         raise ValueError(
             "Cannot provide 'query' as a search parameter: a new query will be created using the 'name' field to search for assets"
