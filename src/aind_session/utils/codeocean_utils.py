@@ -364,9 +364,11 @@ def search_data_assets(
     return tuple(assets)
 
 
+@functools.cache
 def get_session_data_assets(
-    session_id_or_search_term: str | npc_session.AINDSessionRecord,
-    **search_parameters,
+    session_id: str | npc_session.AINDSessionRecord,
+    ttl_hash: int | None = None,
+    **search_params,
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
     """
     Get all data assets that include the search term in their name.
@@ -391,18 +393,20 @@ def get_session_data_assets(
     Filter by asset type:
     >>> filtered_assets = get_session_data_assets('676909_2023-12-13', type='dataset')
     >>> assert len(assets) > len(filtered_assets) > 0
+    >>> assert len(filtered_assets) > 0
     """
+    del ttl_hash  # only used for functools.cache
     subject_id = npc_session.extract_subject(session_id_or_search_term)
     if subject_id is None:
+    if "query" in search_params:
         raise ValueError(
-            f"Search term must include a subject ID: {session_id_or_search_term=!r}"
+            "Cannot provide 'query' as a search parameter: a new query will be created using the 'name' field to search for assets"
         )
-    subject_assets = get_subject_data_assets(
-        subject_id, ttl_hash=aind_session.utils.get_ttl_hash(), **search_parameters
-    )
-    return sort_data_assets(
-        asset for asset in subject_assets if session_id_or_search_term in asset.name
-    )
+    search_params["query"] = get_data_asset_search_query(name=session_id)
+    search_params["sort_field"] = codeocean.data_asset.DataAssetSortBy.Created
+    search_params["sort_order"] = codeocean.components.SortOrder.Ascending
+    assets = search_data_assets(search_params)
+    return assets
 
 
 if __name__ == "__main__":
