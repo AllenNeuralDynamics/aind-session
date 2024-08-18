@@ -52,12 +52,12 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         """
         assets = tuple(
             asset
-            for asset in self._session.assets
+            for asset in self._session.data_assets
             if self.is_sorted_data_asset(asset)
         )
         logger.debug(f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}")
         return assets
-    
+
     @npc_io.cached_property
     def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest sorted data asset associated with the session.

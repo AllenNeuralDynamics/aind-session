@@ -130,7 +130,7 @@ class Session:
         return self.id < other.id
 
     @npc_io.cached_property
-    def assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
+    def data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """All data assets associated with the session.
 
         - objects are instances of `codeocean.data_asset.DataAsset`
@@ -140,7 +140,7 @@ class Session:
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.assets[0].name
+        >>> session.data_assets[0].name
         'ecephys_676909_2023-12-13_13-43-40'
         """
         return aind_session.utils.get_session_data_assets(self.id)
@@ -163,7 +163,7 @@ class Session:
         """
         assets = tuple(
             asset
-            for asset in self.assets
+            for asset in self.data_assets
             if aind_session.utils.is_raw_data_asset(asset)
         )
         if len(assets) == 1:
