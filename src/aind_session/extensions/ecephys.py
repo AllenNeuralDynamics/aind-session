@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+import uuid
 
 import codeocean.data_asset
 import npc_io
@@ -60,6 +61,40 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         )
         return assets
 
+    @staticmethod
+    def is_sorted_data_asset(asset_id: str | codeocean.data_asset.DataAsset) -> bool:
+        """Check if the asset is a sorted data asset.
+
+        - assumes sorted asset to be named <session-id>_sorted<unknown-suffix>
+        - does not assume platform to be `ecephys`
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.is_sorted_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
+        True
+        >>> session.ecephys.is_sorted_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
+        False
+        """
+        asset = aind_session.utils.codeocean_utils.get_data_asset(asset_id)
+        try:
+            session_id = str(npc_session.AINDSessionRecord(asset.name))
+        except ValueError:
+            logger.debug(
+                f"{asset.name=} does not contain a valid session ID: determined to be not a sorted data asset"
+            )
+            return False
+        if asset.name.startswith(f"{session_id}_sorted"):
+            logger.debug(
+                f"{asset.name=} determined to be a sorted data asset based on name starting with '<session-id>_sorted'"
+            )
+            return True
+        else:
+            logger.debug(
+                f"{asset.name=} determined to be not a sorted data asset based on name starting with '<session-id>_sorted'"
+            )
+            return False
+        
     @npc_io.cached_property
     def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest sorted data asset associated with the session.
