@@ -155,7 +155,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             )
             sorted_data_dir = (
                 aind_session.utils.codeocean_utils.get_data_asset_source_dir(
-                    self.sorted_data_asset.id
+                    asset_id=self.sorted_data_asset.id
                 )
             )
             logger.debug(
@@ -206,7 +206,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
     @staticmethod
     def get_clipped_and_compressed_dirs(
-        raw_data_asset_id: str | uuid.UUID | codeocean.data_asset.DataAsset
+        raw_data_asset_id: str | uuid.UUID
     ) -> tuple[upath.UPath | None, upath.UPath | None]:
         """
         Paths to the dirs containing Open Ephys recording data in CodeOcean upload
@@ -221,7 +221,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> clipped.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
         """
-        raw_data_dir = aind_session.utils.get_data_asset_source_dir(raw_data_asset_id)
+        raw_data_dir = aind_session.utils.get_data_asset_source_dir(asset_id=raw_data_asset_id)
         candidate_parent_dirs = (
             raw_data_dir / "ecephys",  # newer location in dedicated modality folder
             raw_data_dir,  # original location in root if upload folder
@@ -258,10 +258,10 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.sorted_probes
         ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
         """
-        return self.get_sorted_probe_names(self.sorted_data_asset)
+        return self.get_sorted_probe_names(self.sorted_data_asset.id)
 
     @staticmethod
-    def get_sorted_probe_names(sorted_data_asset_id: str | uuid.UUID | codeocean.data_asset.DataAsset) -> tuple[str, ...]:
+    def get_sorted_probe_names(sorted_data_asset_id: str | uuid.UUID) -> tuple[str, ...]:
         """Names of probes that reached the final stage of the sorting pipeline.
 
         - checks for probe dirs in the asset's data dir
@@ -276,7 +276,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> aind_session.ecephys.get_sorted_probe_names('a2a54575-b5ca-4cf0-acd0-2933e18bcb2d')
         ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
         """
-        sorted_data_dir = aind_session.utils.get_data_asset_source_dir(sorted_data_asset_id)
+        sorted_data_dir = aind_session.utils.get_data_asset_source_dir(asset_id=sorted_data_asset_id)
         candidate_parent_dirs = (
             sorted_data_dir / "curated",
             sorted_data_dir / "sorting_precurated",
