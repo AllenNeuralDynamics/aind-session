@@ -60,6 +60,8 @@ pip install aind_session
 '676909'
 >>> session.dt
 datetime.datetime(2023, 12, 13, 13, 43, 40)
+>>> len(session.data_assets)            # doctest: +SKIP
+42
 >>> session.raw_data_asset.id
 '16d46411-540a-4122-b47f-8cb2a15d593a'
 >>> session.raw_data_dir.as_posix()
@@ -79,6 +81,37 @@ datetime.datetime(2023, 12, 13, 13, 43, 40)
 >>> assert a == b, "Objects are equal if they refer to the same session ID"
 
 # Objects are also hashable and sortable (by their ID)
+```
+
+Search for session objects by subject ID, platform, date:
+```python
+>>> import aind_session
+
+>>> sessions: tuple[aind_session.Session, ...] = aind_session.get_sessions(subject_id=676909)
+>>> sessions[0].platform
+'behavior'
+>>> sessions[0].date
+'2023-10-24'
+
+# Filter sessions by platform:
+>>> aind_session.get_sessions(subject_id=676909, platform='ecephys')[0].platform
+'ecephys'
+
+# Filter sessions by date (most common formats accepted):
+>>> a = aind_session.get_sessions(subject_id=676909, date='2023-12-13')
+>>> b = aind_session.get_sessions(subject_id=676909, date='2023-12-13_13-43-40')
+>>> c = aind_session.get_sessions(subject_id=676909, date='2023-12-13 13:43:40')
+>>> d = aind_session.get_sessions(subject_id=676909, date='20231213')
+>>> e = aind_session.get_sessions(subject_id=676909, date='20231213_134340')
+>>> a == b == c == d == e
+True
+
+# Filter sessions by start or end date (can be open on either side):
+>>> aind_session.get_sessions(subject_id=676909, start_date='2023-12-13')
+(Session('ecephys_676909_2023-12-13_13-43-40'), Session('ecephys_676909_2023-12-14_12-43-11'))
+>>> aind_session.get_sessions(subject_id=676909, start_date='2023-12-13', end_date='2023-12-14_10-00-00')
+(Session('ecephys_676909_2023-12-13_13-43-40'),)
+
 ```
 
 When working in a capsule, the `Session` object can be used to find or verify attached data assets:
@@ -106,14 +139,15 @@ True
 >>> attached_sessions[0].raw_data_asset.name in attached_data_names
 False
 
-# a missing asset could then be attached to the current capsule (although this might not be advisable in a "Reproducible run"):
+# a missing asset could then be attached to the current capsule (this might not be possible or advisable in a "Reproducible run"):
 >>> aind_session.get_codeocean_client().capsules.attach_data_assets(            # doctest: +SKIP
 ...     capsule_id=os.getenv('OS_CAPSULE_ID'),
 ...     attach_params=[
 ...         codeocean.data_asset.DataAssetAttachParams(
-...             id=attached_sessions[0].raw_data_asset.id,
+...             id=attached_sessions[0].raw_data_asset.id,      
 ...         ),
 ...     ],
+...     # attach_params can be provided as a dict: the model class is used here to illustrate which parameters are available
 ... )
 ```
 
