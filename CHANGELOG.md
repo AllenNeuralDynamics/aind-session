@@ -6,15 +6,55 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 <!-- insertion marker -->
-## Unreleased
+## [v0.1.8](https://github.com/allenneuraldynamics/aind-session/releases/tag/v0.1.8) - 2024-08-19
 
-<small>[Compare with latest](https://github.com/allenneuraldynamics/aind-session/compare/v0.1.4...HEAD)</small>
+<small>[Compare with v0.1.7](https://github.com/allenneuraldynamics/aind-session/compare/v0.1.7...v0.1.8)</small>
+
+### Added
+
+- Add ttl_hash description ([7c5704d](https://github.com/allenneuraldynamics/aind-session/commit/7c5704d60a76a6e6f9dfed2a62097924781afcce) by bjhardcastle).
+- Add readme to coverage report ([393e8d3](https://github.com/allenneuraldynamics/aind-session/commit/393e8d35e59d30cfbf8558726b6ff07e0a9daa8e) by bjhardcastle).
+- Add `get_sessions()` example to readme [skip ci] ([5750544](https://github.com/allenneuraldynamics/aind-session/commit/575054412d285bdc172d0f2b6906151eca743c77) by bjhardcastle).
+
+### Fixed
+
+- Fix test ([89a7c6f](https://github.com/allenneuraldynamics/aind-session/commit/89a7c6f5a89737f2e0419d8ac7f2d0a7b07f7018) by bjhardcastle).
+- Fix function description ([c836cea](https://github.com/allenneuraldynamics/aind-session/commit/c836ceae73b40276026d91ce96f4a7d9057c3bbe) by bjhardcastle).
+
+### Removed
+
+- Remove use of model as input to cached function ([96e73d0](https://github.com/allenneuraldynamics/aind-session/commit/96e73d08f651830702f621db884bc8f4f4ebbe78) by bjhardcastle).
+
+## [v0.1.7](https://github.com/allenneuraldynamics/aind-session/releases/tag/v0.1.7) - 2024-08-18
+
+<small>[Compare with v0.1.6](https://github.com/allenneuraldynamics/aind-session/compare/v0.1.6...v0.1.7)</small>
+
+### Added
+
+- Add sorted_data_assets to ecephys ([bebd9ba](https://github.com/allenneuraldynamics/aind-session/commit/bebd9baaafa380ad3eac5a4c1b0012d28463a0c1) by bjhardcastle).
+- Add doctests ([db626f3](https://github.com/allenneuraldynamics/aind-session/commit/db626f320d9104105bd103f34e51e52e72a60e48) by bjhardcastle).
+
+### Removed
+
+- Remove unused function ([3240a95](https://github.com/allenneuraldynamics/aind-session/commit/3240a95537b95fcadfd5b8b9aa567bfb903edf5c) by bjhardcastle).
+
+## [v0.1.6](https://github.com/allenneuraldynamics/aind-session/releases/tag/v0.1.6) - 2024-08-17
+
+<small>[Compare with v0.1.5](https://github.com/allenneuraldynamics/aind-session/compare/v0.1.5...v0.1.6)</small>
+
+### Added
+
+- Add datetime property and comments on types ([b89baec](https://github.com/allenneuraldynamics/aind-session/commit/b89baec33ada300262bc6c884723825dd5c3dec7) by bjhardcastle).
+- Add get_sessions function ([24284dc](https://github.com/allenneuraldynamics/aind-session/commit/24284dcd558b62172449828282a80d48baca5e32) by bjhardcastle).
+
+## [v0.1.5](https://github.com/allenneuraldynamics/aind-session/releases/tag/v0.1.5) - 2024-08-17
+
+<small>[Compare with v0.1.4](https://github.com/allenneuraldynamics/aind-session/compare/v0.1.4...v0.1.5)</small>
 
 ### Added
 
 - Add support for retrieving sorted probes in ecephys extension ([dec6ed7](https://github.com/allenneuraldynamics/aind-session/commit/dec6ed73ac4e4d4e8bf34cd43c5980b4768bb4eb) by bjhardcastle).
 
-<!-- insertion marker -->
 ## [v0.1.4](https://github.com/allenneuraldynamics/aind-session/releases/tag/v0.1.4) - 2024-08-17
 
 <small>[Compare with v0.1.3](https://github.com/allenneuraldynamics/aind-session/compare/v0.1.3...v0.1.4)</small>
