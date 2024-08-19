@@ -1,0 +1,50 @@
+name: Upload coverage report
+
+on:
+  workflow_dispatch:  # adds a 'Run Workflow' button for manual launching
+
+      
+jobs:
+  create_and_upload:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.11"]
+        os: [ubuntu-latest]
+    permissions: write-all
+
+
+
+    steps:
+    - uses: actions/checkout@v4
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT }}
+        # use PAT, or push comes from `github-actions` bot, which can't trigger
+        # other workflows   
+    
+    - uses: pdm-project/setup-pdm@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        update-python: true
+        cache: true # speeds-up setup by caching downloaded packages 
+        
+    - name: Install dev dependencies
+      run: |
+        pdm install -G dev
+        
+    - name: Test
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        CODE_OCEAN_API_TOKEN: ${{ secrets.CODE_OCEAN_API_TOKEN }}
+      run: |
+        mkdir .mypy_cache   
+        pdm run test
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v4
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
