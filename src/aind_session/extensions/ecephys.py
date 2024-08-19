@@ -155,7 +155,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             )
             sorted_data_dir = (
                 aind_session.utils.codeocean_utils.get_data_asset_source_dir(
-                    self.sorted_data_asset
+                    self.sorted_data_asset.id
                 )
             )
             logger.debug(
@@ -203,7 +203,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 f"No 'compressed' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
             )
         return path
-    
+
     @staticmethod
     def get_clipped_and_compressed_dirs(
         raw_data_asset_id: str | uuid.UUID | codeocean.data_asset.DataAsset

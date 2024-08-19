@@ -162,9 +162,9 @@ def is_raw_data_asset(asset_id_or_model: str | uuid.UUID | codeocean.data_asset.
         )
         return False
 
-
+@functools.cache
 def get_data_asset_source_dir(
-    asset_id: str | uuid.UUID,
+    asset_id: str | uuid.UUID,  # cannot accept model while it has a dict component and unsafe_hash=False
     ttl_hash: int | None = None,
 ) -> upath.UPath:
     """Get the source dir for a data asset.
@@ -182,7 +182,6 @@ def get_data_asset_source_dir(
     >>> get_data_asset_source_dir('83636983-f80d-42d6-a075-09b60c6abd5e').as_posix()
     's3://aind-ephys-data/ecephys_668759_2023-07-11_13-07-32'
     """
-    del ttl_hash  # only used for functools.cache
 
     asset = get_data_asset_model(asset_id)
 
@@ -192,7 +191,7 @@ def get_data_asset_source_dir(
         for key in (asset.id, asset.name):
             with contextlib.suppress(FileNotFoundError):
                 return aind_session.utils.get_source_dir_by_name(
-                    key, ttl_hash=aind_session.utils.get_ttl_hash(10 * 60)
+                    key, ttl_hash=aind_session.utils.get_ttl_hash(10 * 60 if ttl_hash is None else ttl_hash)
                 )
         raise FileNotFoundError(
             f"No source dir found for {asset.id=} or {asset.name=} in known S3 buckets"

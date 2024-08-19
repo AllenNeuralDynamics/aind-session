@@ -214,7 +214,7 @@ class Session:
                 f"Using asset {self.raw_data_asset.id} to find raw data path for {self.id}"
             )
             raw_data_dir = aind_session.utils.get_data_asset_source_dir(
-                self.raw_data_asset
+                asset_id=self.raw_data_asset,
             )
             logger.debug(f"Raw data dir found for {self.id}: {raw_data_dir}")
             return raw_data_dir
