@@ -117,7 +117,7 @@ addopts = [
     "--doctest-modules",
     "--ignore-glob=*scripts*,*examples*,*docs*",
     "--cov",
-    "--cov-report=html",
+    "--cov-report=xml",
     "--cov-config=pyproject.toml",
     "--doctest-glob=README.md",
     "-x",
@@ -183,7 +183,7 @@ dev = [
 [tool.pdm.scripts]
 ruff = "ruff check src --fix-only"
 black = "black src"
-pytest = "pytest --cov-report term-missing:skip-covered --cov-report=html"
+pytest = "pytest --cov-report term-missing:skip-covered --cov-report=xml"
 mypy = "mypy src --install-types --non-interactive"
 log = "git-changelog -o CHANGELOG.md"
 dryrun = "pdm publish --repository testpypi --dry-run"
