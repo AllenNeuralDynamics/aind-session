@@ -128,64 +128,6 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             )
             return sorted_data_dir
 
-    @staticmethod
-    def is_sorted_data_asset(asset_id: str | codeocean.data_asset.DataAsset) -> bool:
-        """Check if the asset is a sorted data asset.
-
-        - assumes sorted asset to be named <session-id>_sorted<unknown-suffix>
-        - does not assume platform to be `ecephys`
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.is_sorted_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
-        True
-        >>> session.ecephys.is_sorted_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
-        False
-        """
-        asset = aind_session.utils.codeocean_utils.get_data_asset(asset_id)
-        try:
-            session_id = str(npc_session.AINDSessionRecord(asset.name))
-        except ValueError:
-            logger.debug(
-                f"{asset.name=} does not contain a valid session ID: determined to be not a sorted data asset"
-            )
-            return False
-        if asset.name.startswith(f"{session_id}_sorted"):
-            logger.debug(
-                f"{asset.name=} determined to be a sorted data asset based on name starting with '<session-id>_sorted'"
-            )
-            return True
-        else:
-            logger.debug(
-                f"{asset.name=} determined to be not a sorted data asset based on name starting with '<session-id>_sorted'"
-            )
-            return False
-
-    @npc_io.cached_property
-    def _clipped_and_compressed_dirs(
-        self,
-    ) -> tuple[upath.UPath | None, upath.UPath | None]:
-        candidate_parent_dirs = (
-            self._session.raw_data_dir
-            / "ecephys",  # newer location in dedicated modality folder
-            self._session.raw_data_dir,  # original location in root if upload folder
-        )
-        return_paths: list[upath.UPath | None] = [None, None]
-        for parent_dir in candidate_parent_dirs:
-            for i, name in enumerate(("clipped", "compressed")):
-                if (path := parent_dir / f"ecephys_{name}").exists():
-                    if (existing_path := return_paths[i]) is None:
-                        return_paths[i] = path
-                        logger.debug(f"Found {path.as_posix()}")
-                    else:
-                        assert existing_path is not None
-                        logger.warning(
-                            f"Found multiple {name} dirs: using {existing_path.relative_to(self._session.raw_data_dir).as_posix()} over {path.relative_to(self._session.raw_data_dir).as_posix()}"
-                        )
-        assert len(return_paths) == 2
-        return return_paths[0], return_paths[1]
-
     @npc_io.cached_property
     def clipped_dir(self) -> upath.UPath:
         """Path to the dir containing original Open Ephys recording data, with
@@ -200,7 +142,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.clipped_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
         """
-        if (path := self._clipped_and_compressed_dirs[0]) is None:
+        if (path := self.get_clipped_and_compressed_dirs(self._session.raw_data_asset.id)[0]) is None:
             raise FileNotFoundError(
                 f"No 'clipped' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
             )
@@ -221,11 +163,48 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.compressed_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_compressed'
         """
-        if (path := self._clipped_and_compressed_dirs[1]) is None:
+        if (path := self.get_clipped_and_compressed_dirs(self._session.raw_data_asset.id)[1]) is None:
             raise FileNotFoundError(
                 f"No 'compressed' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
             )
         return path
+    
+    @staticmethod
+    def get_clipped_and_compressed_dirs(
+        raw_data_asset_id: str | uuid.UUID | codeocean.data_asset.DataAsset
+    ) -> tuple[upath.UPath | None, upath.UPath | None]:
+        """
+        Paths to the dirs containing Open Ephys recording data in CodeOcean upload
+        dir.
+
+        - originally located in the root of the session's raw data dir
+        - for later sessions (2024 onwards), located in an `ecephys` subdirectory
+
+        Examples
+        --------
+        >>> clipped, compressed = aind_session.get_clipped_and_compressed_dirs('16d46411-540a-4122-b47f-8cb2a15d593a')
+        >>> clipped.as_posix()
+        's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
+        """
+        raw_data_dir = aind_session.utils.get_data_asset_source_dir(raw_data_asset_id)
+        candidate_parent_dirs = (
+            raw_data_dir / "ecephys",  # newer location in dedicated modality folder
+            raw_data_dir,  # original location in root if upload folder
+        )
+        return_paths: list[upath.UPath | None] = [None, None]
+        for parent_dir in candidate_parent_dirs:
+            for i, name in enumerate(("clipped", "compressed")):
+                if (path := parent_dir / f"ecephys_{name}").exists():
+                    if (existing_path := return_paths[i]) is None:
+                        return_paths[i] = path
+                        logger.debug(f"Found {path.as_posix()}")
+                    else:
+                        assert existing_path is not None
+                        logger.warning(
+                            f"Found multiple {name} dirs: using {existing_path.relative_to(raw_data_dir).as_posix()} over {path.relative_to(raw_data_dir).as_posix()}"
+                        )
+        assert len(return_paths) == 2
+        return return_paths[0], return_paths[1]
 
     @npc_io.cached_property
     def sorted_probes(self) -> tuple[str, ...]:
