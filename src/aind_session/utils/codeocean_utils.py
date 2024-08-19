@@ -88,24 +88,27 @@ def sort_data_assets(
     return tuple(sorted(assets, key=lambda asset: asset.created))
 
 
-def get_data_asset(
-    asset_id: str | uuid.UUID | codeocean.data_asset.DataAsset,
+def get_data_asset_model(
+    asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
 ) -> codeocean.data_asset.DataAsset:
-    """Fetches data asset metadata from an ID.
+    """Fetches data asset metadata model from an ID.
+    
+    - use to ensure we have a `DataAsset` object
+    - if model is already a `DataAsset`, it is returned as-is
 
     Examples
     --------
-    >>> asset = get_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
+    >>> asset = get_data_asset_model('83636983-f80d-42d6-a075-09b60c6abd5e')
     >>> assert isinstance(asset, codeocean.data_asset.DataAsset)
     >>> asset.name
     'ecephys_668759_2023-07-11_13-07-32'
     """
-    if isinstance(asset_id, codeocean.data_asset.DataAsset):
-        return asset_id
-    return get_codeocean_client().data_assets.get_data_asset(str(asset_id))
+    if isinstance(asset_id_or_model, codeocean.data_asset.DataAsset):
+        return asset_id_or_model
+    return get_codeocean_client().data_assets.get_data_asset(str(asset_id_or_model))
 
 
-def is_raw_data_asset(asset: str | uuid.UUID | codeocean.data_asset.DataAsset) -> bool:
+def is_raw_data_asset(asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset) -> bool:
     """
     Determine if a data asset is raw data based on custom metadata or tags or
     name.
@@ -123,7 +126,7 @@ def is_raw_data_asset(asset: str | uuid.UUID | codeocean.data_asset.DataAsset) -
     >>> is_raw_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
     False
     """
-    asset = get_data_asset(asset)
+    asset = get_data_asset_model(asset_id_or_model)
     if asset.custom_metadata and asset.custom_metadata.get("data level") == "raw data":
         logger.debug(
             f"{asset.id=} determined to be raw data based on custom_metadata containing 'data level': 'raw data'"
@@ -161,7 +164,8 @@ def is_raw_data_asset(asset: str | uuid.UUID | codeocean.data_asset.DataAsset) -
 
 
 def get_data_asset_source_dir(
-    asset: str | uuid.UUID | codeocean.data_asset.DataAsset,
+    asset_id: str | uuid.UUID,
+    ttl_hash: int | None = None,
 ) -> upath.UPath:
     """Get the source dir for a data asset.
 
@@ -178,6 +182,9 @@ def get_data_asset_source_dir(
     >>> get_data_asset_source_dir('83636983-f80d-42d6-a075-09b60c6abd5e').as_posix()
     's3://aind-ephys-data/ecephys_668759_2023-07-11_13-07-32'
     """
+    del ttl_hash  # only used for functools.cache
+
+    asset = get_data_asset_model(asset_id)
 
     def get_dir_from_known_s3_locations(
         asset: codeocean.data_asset.DataAsset,
@@ -191,7 +198,6 @@ def get_data_asset_source_dir(
             f"No source dir found for {asset.id=} or {asset.name=} in known S3 buckets"
         )
 
-    asset = get_data_asset(asset)
     if asset.source_bucket:
         protocol = {"aws": "s3", "gcp": "gs", "local": "file"}.get(
             asset.source_bucket.origin

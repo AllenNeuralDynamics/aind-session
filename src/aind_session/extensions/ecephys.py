@@ -76,7 +76,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.is_sorted_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
         False
         """
-        asset = aind_session.utils.codeocean_utils.get_data_asset(asset_id)
+        asset = aind_session.utils.codeocean_utils.get_data_asset_model(asset_id)
         try:
             session_id = str(npc_session.AINDSessionRecord(asset.name))
         except ValueError:
