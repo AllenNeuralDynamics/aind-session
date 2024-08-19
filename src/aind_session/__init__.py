@@ -7,7 +7,7 @@ import importlib.metadata
 import logging
 
 # import functions from submodules here:
-import aind_session.extensions  # noqa
+from aind_session.extensions import *
 from aind_session.session import *
 from aind_session.utils import *
 
