@@ -94,7 +94,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 f"{asset.name=} determined to be not a sorted data asset based on name starting with '<session-id>_sorted'"
             )
             return False
-        
+
     @npc_io.cached_property
     def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest sorted data asset associated with the session.
@@ -177,7 +177,11 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.clipped_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
         """
-        if (path := self.get_clipped_and_compressed_dirs(self._session.raw_data_asset.id)[0]) is None:
+        if (
+            path := self.get_clipped_and_compressed_dirs(
+                self._session.raw_data_asset.id
+            )[0]
+        ) is None:
             raise FileNotFoundError(
                 f"No 'clipped' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
             )
@@ -198,7 +202,11 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.compressed_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_compressed'
         """
-        if (path := self.get_clipped_and_compressed_dirs(self._session.raw_data_asset.id)[1]) is None:
+        if (
+            path := self.get_clipped_and_compressed_dirs(
+                self._session.raw_data_asset.id
+            )[1]
+        ) is None:
             raise FileNotFoundError(
                 f"No 'compressed' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
             )
@@ -206,7 +214,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
     @staticmethod
     def get_clipped_and_compressed_dirs(
-        raw_data_asset_id: str | uuid.UUID
+        raw_data_asset_id: str | uuid.UUID,
     ) -> tuple[upath.UPath | None, upath.UPath | None]:
         """
         Paths to the dirs containing Open Ephys recording data in CodeOcean upload
@@ -221,7 +229,9 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> clipped.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
         """
-        raw_data_dir = aind_session.utils.get_data_asset_source_dir(asset_id=raw_data_asset_id)
+        raw_data_dir = aind_session.utils.get_data_asset_source_dir(
+            asset_id=raw_data_asset_id
+        )
         candidate_parent_dirs = (
             raw_data_dir / "ecephys",  # newer location in dedicated modality folder
             raw_data_dir,  # original location in root if upload folder
@@ -261,7 +271,9 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         return self.get_sorted_probe_names(self.sorted_data_asset.id)
 
     @staticmethod
-    def get_sorted_probe_names(sorted_data_asset_id: str | uuid.UUID) -> tuple[str, ...]:
+    def get_sorted_probe_names(
+        sorted_data_asset_id: str | uuid.UUID,
+    ) -> tuple[str, ...]:
         """Names of probes that reached the final stage of the sorting pipeline.
 
         - checks for probe dirs in the asset's data dir
@@ -276,7 +288,9 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> aind_session.ecephys.get_sorted_probe_names('a2a54575-b5ca-4cf0-acd0-2933e18bcb2d')
         ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
         """
-        sorted_data_dir = aind_session.utils.get_data_asset_source_dir(asset_id=sorted_data_asset_id)
+        sorted_data_dir = aind_session.utils.get_data_asset_source_dir(
+            asset_id=sorted_data_asset_id
+        )
         candidate_parent_dirs = (
             sorted_data_dir / "curated",
             sorted_data_dir / "sorting_precurated",
@@ -296,7 +310,8 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             probes.add(probe)
         logger.debug(f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}")
         return tuple(sorted(probes))
-    
+
+
 if __name__ == "__main__":
     from aind_session import testmod
 

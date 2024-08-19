@@ -92,7 +92,7 @@ def get_data_asset_model(
     asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
 ) -> codeocean.data_asset.DataAsset:
     """Fetches data asset metadata model from an ID.
-    
+
     - use to ensure we have a `DataAsset` object
     - if model is already a `DataAsset`, it is returned as-is
 
@@ -108,7 +108,9 @@ def get_data_asset_model(
     return get_codeocean_client().data_assets.get_data_asset(str(asset_id_or_model))
 
 
-def is_raw_data_asset(asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset) -> bool:
+def is_raw_data_asset(
+    asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
+) -> bool:
     """
     Determine if a data asset is raw data based on custom metadata or tags or
     name.
@@ -162,9 +164,12 @@ def is_raw_data_asset(asset_id_or_model: str | uuid.UUID | codeocean.data_asset.
         )
         return False
 
+
 @functools.cache
 def get_data_asset_source_dir(
-    asset_id: str | uuid.UUID,  # cannot accept model while it has a dict component and unsafe_hash=False
+    asset_id: (
+        str | uuid.UUID
+    ),  # cannot accept model while it has a dict component and unsafe_hash=False
     ttl_hash: int | None = None,
 ) -> upath.UPath:
     """Get the source dir for a data asset.
@@ -180,7 +185,7 @@ def get_data_asset_source_dir(
     - `ttl_hash` is used to cache the result for a given number of seconds (time-to-live)
         - default None means cache indefinitely
         - use `aind_utils.get_ttl_hash(seconds)` to generate a new ttl_hash periodically
-    
+
     Examples
     --------
     >>> get_data_asset_source_dir('83636983-f80d-42d6-a075-09b60c6abd5e').as_posix()
@@ -195,7 +200,10 @@ def get_data_asset_source_dir(
         for key in (asset.id, asset.name):
             with contextlib.suppress(FileNotFoundError):
                 return aind_session.utils.get_source_dir_by_name(
-                    key, ttl_hash=aind_session.utils.get_ttl_hash(10 * 60 if ttl_hash is None else ttl_hash)
+                    key,
+                    ttl_hash=aind_session.utils.get_ttl_hash(
+                        10 * 60 if ttl_hash is None else ttl_hash
+                    ),
                 )
         raise FileNotFoundError(
             f"No source dir found for {asset.id=} or {asset.name=} in known S3 buckets"
@@ -247,7 +255,7 @@ def get_subject_data_assets(
     - `ttl_hash` is used to cache the result for a given number of seconds (time-to-live)
         - default None means cache indefinitely
         - use `aind_utils.get_ttl_hash(seconds)` to generate a new ttl_hash periodically
-    
+
     Examples
     --------
 
@@ -406,11 +414,11 @@ def get_session_data_assets(
       - then examine the `assets` attribute on each returned object
     - provide additional search parameters to filter results, as schematized in `codeocean.data_asset.DataAssetSearchParams`:
     https://github.com/codeocean/codeocean-sdk-python/blob/4d9cf7342360820f3d9bd59470234be3e477883e/src/codeocean/data_asset.py#L199
-    
+
     - `ttl_hash` is used to cache the result for a given number of seconds (time-to-live)
         - default None means cache indefinitely
         - use `aind_utils.get_ttl_hash(seconds)` to generate a new ttl_hash periodically
-    
+
     Examples
     --------
     Use a full session ID:
