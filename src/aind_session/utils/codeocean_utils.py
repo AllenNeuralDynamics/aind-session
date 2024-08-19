@@ -91,7 +91,7 @@ def sort_data_assets(
 def get_data_asset(
     asset_id: str | uuid.UUID | codeocean.data_asset.DataAsset,
 ) -> codeocean.data_asset.DataAsset:
-    """Normalizes an asset ID (uuid) to a data asset model.
+    """Fetches data asset metadata from an ID.
 
     Examples
     --------
