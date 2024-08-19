@@ -89,12 +89,14 @@ max-complexity = 10
 [tool.coverage.paths]
 source = [
     "src",
+    "README.md",
 ]
 
 [tool.coverage.run]
 branch = true
 source = [
     "src",
+    "README.md",
 ]
 
 [tool.coverage.report]
