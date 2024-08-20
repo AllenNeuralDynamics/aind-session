@@ -11,8 +11,10 @@ from typing import Any
 
 import codeocean
 import codeocean.components
+import codeocean.computation
 import codeocean.data_asset
 import npc_session
+import requests
 import upath
 
 import aind_session.utils
@@ -453,6 +455,125 @@ def get_session_data_assets(
     assets = search_data_assets(search_params)
     return assets
 
+
+def is_computation_errored(computation_id_or_model: codeocean.computation.Computation) -> bool:
+    """Make a best-effort determination of whether a computation errored. Should
+    not be used with with runs that produce no output. Migrated from npc_lims.
+    
+    Computation `end_status` can give false-positives and return "succeeded", even
+    though the pipeline errored. At least, this is true for the
+    spike sorting pipeline. 
+    
+    Initial checks are based on the computation metadata (if the state reports failed
+    then it is considered errored):
+        - if the computation `state` is not "completed" a `ValueError` is raised
+        - if the computation `end_status` is not "succeeded", it is considered
+          errored (we assume there aren't false-negatives)
+    
+    If `end_status` is "succeeded", then the output folder is checked for indications of error:
+    - no files (or only `nextflow` and `output` files for pipeline runs)
+    - the `output` file contains certain text:
+        - "Out of memory."
+        - a Python traceback
+        - a CUDA error message
+        - "Task failed to start - DockerTimeoutError"
+
+    
+    >>> aind_session.is_computation_errored("7646f92f-d225-464c-b7aa-87a87f34f408")
+    True
+    """
+    if not isinstance(computation_id_or_model, codeocean.computation.Computation):
+        computation = get_codeocean_client().computations.get_computation(
+            str(computation_id_or_model)
+        )
+    else:
+        computation = computation_id_or_model
+        
+    def desc(computation: codeocean.computation.Computation) -> str:
+        return f"Computation {computation.id} ({computation.name})"
+    
+    if computation.state != codeocean.computation.ComputationState.Completed:
+        raise ValueError(
+            f"{desc(computation)} is {computation.state}: cannot determine if errored"
+        )
+    if computation.state == codeocean.computation.ComputationState.Failed:
+        logger.debug(f"{desc(computation)} considered errored: state is {computation.state}")
+        return True
+    if computation.end_status != codeocean.computation.ComputationEndStatus.Succeeded:
+        logger.debug(f"{desc(computation)} considered errored: end_status is {computation.end_status}")
+        return True
+    if not computation.has_results:
+        logger.debug(f"{desc(computation)} considered errored: has_results is {computation.has_results}")
+        return True
+    
+    # check if errored based on files in result
+    computation_results = get_codeocean_client().computations.list_computation_results(
+        computation_id=computation.id
+    )
+    result_item_names = sorted(item.name for item in computation_results.items)
+    is_no_files = len(result_item_names) == 0
+    is_pipeline_error = len(result_item_names) == 2 and result_item_names == [
+        "nextflow",
+        "output",
+    ]
+    is_capsule_error = len(result_item_names) == 1 and result_item_names == [
+        "output"
+    ]
+    if is_no_files or is_pipeline_error or is_capsule_error:
+        logger.debug(
+            f"{desc(computation)} suspected errored based on number of items in result: {result_item_names}"
+        )
+        return True
+    
+    if "output" in result_item_names:
+        output: str = requests.get(
+            get_codeocean_client()
+            .computations.get_result_file_download_url(computation.id, "output")
+            .url
+        ).text
+        
+        is_sorting_pipeline = all(
+            text in output.lower()
+            for text in ("sorting", "kilosort", "N E X T F L O W".lower())
+        ) # some messages not considered errors for sorting pipeline if they occur for only some probes
+        
+        if "Out of memory." in output:
+            logger.debug(
+                f"{desc(computation)} suspected errored:'Out of memory.' in output text file"
+            )
+            return True
+        if "Traceback (most recent call last)" in output:
+            logger.debug(
+                f"{desc(computation)} suspected errored: Python traceback in output text file"
+            )
+            return True
+        if "Command error:" in output:
+            logger.debug(
+                f"{desc(computation)} suspected errored: 'Command error:' message in output text file"
+            )
+            return True
+        if "The CUDA error was:" in output:
+            if is_sorting_pipeline:
+                logger.warning(
+                    f"{desc(computation)} has at least one CUDA error message, but some probes may still be usable"
+                )
+            else:
+                logger.debug(
+                    f"{desc(computation)} suspected errored: CUDA error message in output text file"
+                )
+                return True
+        if "Task failed to start - DockerTimeoutError" in output:
+            logger.debug(
+                f"{desc(computation)} suspected errored: 'DockerTimeoutError' in output text file"
+            )
+            return True
+        if is_sorting_pipeline:
+            if "nwb" not in result_item_names:
+                logger.debug(
+                    f"{desc(computation)} suspected errored: NWB file is missing from results"
+                )
+                return True
+    return False
 
 if __name__ == "__main__":
     from aind_session import testmod
