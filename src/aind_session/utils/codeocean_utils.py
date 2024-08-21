@@ -526,11 +526,13 @@ def is_computation_errored(computation_id_or_model: codeocean.computation.Comput
         return True
     
     if "output" in result_item_names:
-        output: str = requests.get(
+        output: str = getattr(requests.get(
             get_codeocean_client()
             .computations.get_result_file_download_url(computation.id, "output")
             .url
-        ).text
+        ), 'text') 
+        # use getattr as a workaround for types-requests incompatibility with boto3 https://github.com/python/typeshed/issues/10825
+        # (unused type:ignore isn't allowed)
         
         is_sorting_pipeline = all(
             text in output.lower()
