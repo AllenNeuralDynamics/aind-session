@@ -476,7 +476,7 @@ def get_session_data_assets(
     return assets
 
 
-def is_computation_errored(computation_id_or_model: codeocean.computation.Computation) -> bool:
+def is_computation_error(computation_id_or_model: codeocean.computation.Computation) -> bool:
     """Make a best-effort determination of whether a computation errored. Should
     not be used with with runs that produce no output. Migrated from npc_lims.
     
@@ -507,10 +507,10 @@ def is_computation_errored(computation_id_or_model: codeocean.computation.Comput
         )
     else:
         computation = computation_id_or_model
-        
+
     def desc(computation: codeocean.computation.Computation) -> str:
         return f"Computation {computation.id} ({computation.name})"
-    
+
     if computation.state != codeocean.computation.ComputationState.Completed:
         raise ValueError(
             f"{desc(computation)} is {computation.state}: cannot determine if errored"
@@ -524,7 +524,7 @@ def is_computation_errored(computation_id_or_model: codeocean.computation.Comput
     if not computation.has_results:
         logger.debug(f"{desc(computation)} considered errored: has_results is {computation.has_results}")
         return True
-    
+
     # check if errored based on files in result
     computation_results = get_codeocean_client().computations.list_computation_results(
         computation_id=computation.id
@@ -543,55 +543,60 @@ def is_computation_errored(computation_id_or_model: codeocean.computation.Comput
             f"{desc(computation)} suspected errored based on number of items in result: {result_item_names}"
         )
         return True
-    
+
     if "output" in result_item_names:
-        output: str = getattr(requests.get(
+        # use getattr as a workaround for types-requests incompatibility with boto3 https://github.com/python/typeshed/issues/10825
+        # (unused type:ignore isn't allowed)
+        output: str = (requests.get(
             get_codeocean_client()
             .computations.get_result_file_download_url(computation.id, "output")
             .url
-        ), 'text') 
-        # use getattr as a workaround for types-requests incompatibility with boto3 https://github.com/python/typeshed/issues/10825
-        # (unused type:ignore isn't allowed)
-        
-        is_sorting_pipeline = all(
-            text in output.lower()
-            for text in ("sorting", "kilosort", "N E X T F L O W".lower())
-        ) # some messages not considered errors for sorting pipeline if they occur for only some probes
-        
-        if "Out of memory." in output:
+        )).text
+        if is_output_file_error(output):
+            logger.debug(f"{desc(computation)} considered errored: output file contains error")
+            return True
+
+        if is_output_file_from_sorting_pipeline(output) and "nwb" not in result_item_names:
             logger.debug(
-                f"{desc(computation)} suspected errored:'Out of memory.' in output text file"
+                f"{desc(computation)} considered errored: results do not contain NWB file"
             )
             return True
-        if "Traceback (most recent call last)" in output:
-            logger.debug(
-                f"{desc(computation)} suspected errored: Python traceback in output text file"
-            )
-            return True
-        if "Command error:" in output:
-            logger.debug(
-                f"{desc(computation)} suspected errored: 'Command error:' message in output text file"
-            )
-            return True
-        if "The CUDA error was:" in output:
-            if is_sorting_pipeline:
+    return False
+
+def is_output_file_from_sorting_pipeline(output: str) -> bool:
+    return all(
+        text in output.lower()
+        for text in ("sorting", "kilosort", "N E X T F L O W".lower())
+    )
+
+def is_output_file_error(output: str) -> bool:
+    """Check if an output file contains text that indicates an error occurred
+    during capsule/pipeline run. 
+    
+    Examples
+    --------
+    >>> aind_session.ecephys.is_sorted_asset_error('5116b590-c240-4413-8a0f-1686659d13cc') # DockerTimeoutError
+    True
+    >>> aind_session.ecephys.is_sorted_asset_error('03b8a999-d1fb-4a27-b28f-7b880fbdef4b')
+    False
+    """
+    for error_text in (
+        "Essential container in task exited",
+        "Out of memory.",
+        "Task failed to start - DockerTimeoutError",
+        "The CUDA error was:",
+        "Traceback (most recent call last):",
+        "Command error:",
+    ):
+        if error_text in output:
+            if "CUDA" in error_text and is_output_file_from_sorting_pipeline(output):
                 logger.warning(
-                    f"{desc(computation)} has at least one CUDA error message, but some probes may still be usable"
+                    "output file has at least one CUDA error message, but some probes may still be usable"
                 )
+                continue
             else:
                 logger.debug(
-                    f"{desc(computation)} suspected errored: CUDA error message in output text file"
-                )
-                return True
-        if "Task failed to start - DockerTimeoutError" in output:
-            logger.debug(
-                f"{desc(computation)} suspected errored: 'DockerTimeoutError' in output text file"
-            )
-            return True
-        if is_sorting_pipeline:
-            if "nwb" not in result_item_names:
-                logger.debug(
-                    f"{desc(computation)} suspected errored: NWB file is missing from results"
+                    f"output file text indicates capsule/pipeline error: contains {error_text!r}"
                 )
                 return True
     return False
