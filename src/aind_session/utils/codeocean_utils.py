@@ -107,8 +107,28 @@ def get_data_asset_model(
     """
     if isinstance(asset_id_or_model, codeocean.data_asset.DataAsset):
         return asset_id_or_model
-    return get_codeocean_client().data_assets.get_data_asset(str(asset_id_or_model))
+    return get_codeocean_client().data_assets.get_data_asset(get_normalized_uuid(asset_id_or_model))
 
+
+def get_normalized_uuid(
+    id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset | codeocean.computation.Computation,
+) -> str:
+    """
+    Accepts a data or computation ID or model and returns a string with the format expected
+    by the CodeOcean API.
+    
+    Examples
+    --------
+    >>> a = get_normalized_uuid('867ed56f-f9cc-4649-8b9f-97efc4dbd4cd')
+    >>> b = get_normalized_uuid('867ed56ff9cc46498b9f97efc4dbd4cd')
+    >>> c = get_normalized_uuid(get_subject_data_assets(668759)[0])
+    >>> assert a == b == c
+    >>> a
+    '867ed56f-f9cc-4649-8b9f-97efc4dbd4cd'
+    """
+    if (id_ := getattr(id_or_model, "id", None)) is not None:
+        return id_
+    return str(uuid.UUID(str(id_or_model)))
 
 def is_raw_data_asset(
     asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
@@ -478,13 +498,12 @@ def is_computation_errored(computation_id_or_model: codeocean.computation.Comput
         - a CUDA error message
         - "Task failed to start - DockerTimeoutError"
 
-    
-    >>> aind_session.is_computation_errored("7646f92f-d225-464c-b7aa-87a87f34f408")
+    >>> aind_session.is_computation_error("7646f92f-d225-464c-b7aa-87a87f34f408")
     True
     """
     if not isinstance(computation_id_or_model, codeocean.computation.Computation):
         computation = get_codeocean_client().computations.get_computation(
-            str(computation_id_or_model)
+            get_normalized_uuid(computation_id_or_model)
         )
     else:
         computation = computation_id_or_model
