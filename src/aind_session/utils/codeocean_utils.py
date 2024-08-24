@@ -1,4 +1,4 @@
-# mypy: disable-error-code=unused-ignore 
+# mypy: disable-error-code=unused-ignore
 # types-requests has compatibility issue with boto3 https://github.com/python/typeshed/issues/10825
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import codeocean.components
 import codeocean.computation
 import codeocean.data_asset
 import npc_session
-import requests     # type: ignore # to avoid checking types/installing types-requests
+import requests  # type: ignore # to avoid checking types/installing types-requests
 import upath
 
 import aind_session.utils
@@ -109,16 +109,23 @@ def get_data_asset_model(
     """
     if isinstance(asset_id_or_model, codeocean.data_asset.DataAsset):
         return asset_id_or_model
-    return get_codeocean_client().data_assets.get_data_asset(get_normalized_uuid(asset_id_or_model))
+    return get_codeocean_client().data_assets.get_data_asset(
+        get_normalized_uuid(asset_id_or_model)
+    )
 
 
 def get_normalized_uuid(
-    id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset | codeocean.computation.Computation,
+    id_or_model: (
+        str
+        | uuid.UUID
+        | codeocean.data_asset.DataAsset
+        | codeocean.computation.Computation
+    ),
 ) -> str:
     """
     Accepts a data or computation ID or model and returns a string with the format expected
     by the CodeOcean API.
-    
+
     Examples
     --------
     >>> a = get_normalized_uuid('867ed56f-f9cc-4649-8b9f-97efc4dbd4cd')
@@ -131,6 +138,7 @@ def get_normalized_uuid(
     if (id_ := getattr(id_or_model, "id", None)) is not None:
         return id_
     return str(uuid.UUID(str(id_or_model)))
+
 
 def is_raw_data_asset(
     asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
@@ -478,20 +486,22 @@ def get_session_data_assets(
     return assets
 
 
-def is_computation_error(computation_id_or_model: codeocean.computation.Computation) -> bool:
+def is_computation_error(
+    computation_id_or_model: codeocean.computation.Computation,
+) -> bool:
     """Make a best-effort determination of whether a computation errored. Should
     not be used with with runs that produce no output. Migrated from npc_lims.
-    
+
     Computation `end_status` can give false-positives and return "succeeded", even
     though the pipeline errored. At least, this is true for the
-    spike sorting pipeline. 
-    
+    spike sorting pipeline.
+
     Initial checks are based on the computation metadata (if the state reports failed
     then it is considered errored):
         - if the computation `state` is not "completed" a `ValueError` is raised
         - if the computation `end_status` is not "succeeded", it is considered
           errored (we assume there aren't false-negatives)
-    
+
     If `end_status` is "succeeded", then the output folder is checked for indications of error:
     - no files (or only `nextflow` and `output` files for pipeline runs)
     - the `output` file contains certain text:
@@ -518,13 +528,19 @@ def is_computation_error(computation_id_or_model: codeocean.computation.Computat
             f"{desc(computation)} is {computation.state}: cannot determine if errored"
         )
     if computation.state == codeocean.computation.ComputationState.Failed:
-        logger.debug(f"{desc(computation)} considered errored: state is {computation.state}")
+        logger.debug(
+            f"{desc(computation)} considered errored: state is {computation.state}"
+        )
         return True
     if computation.end_status != codeocean.computation.ComputationEndStatus.Succeeded:
-        logger.debug(f"{desc(computation)} considered errored: end_status is {computation.end_status}")
+        logger.debug(
+            f"{desc(computation)} considered errored: end_status is {computation.end_status}"
+        )
         return True
     if not computation.has_results:
-        logger.debug(f"{desc(computation)} considered errored: has_results is {computation.has_results}")
+        logger.debug(
+            f"{desc(computation)} considered errored: has_results is {computation.has_results}"
+        )
         return True
 
     # check if errored based on files in result
@@ -537,9 +553,7 @@ def is_computation_error(computation_id_or_model: codeocean.computation.Computat
         "nextflow",
         "output",
     ]
-    is_capsule_error = len(result_item_names) == 1 and result_item_names == [
-        "output"
-    ]
+    is_capsule_error = len(result_item_names) == 1 and result_item_names == ["output"]
     if is_no_files or is_pipeline_error or is_capsule_error:
         logger.debug(
             f"{desc(computation)} suspected errored based on number of items in result: {result_item_names}"
@@ -547,21 +561,29 @@ def is_computation_error(computation_id_or_model: codeocean.computation.Computat
         return True
 
     if "output" in result_item_names:
-        output: str = (requests.get(
-            get_codeocean_client()
-            .computations.get_result_file_download_url(computation.id, "output")
-            .url
-        )).text
+        output: str = (
+            requests.get(
+                get_codeocean_client()
+                .computations.get_result_file_download_url(computation.id, "output")
+                .url
+            )
+        ).text
         if is_output_file_error(output):
-            logger.debug(f"{desc(computation)} considered errored: output file contains error")
+            logger.debug(
+                f"{desc(computation)} considered errored: output file contains error"
+            )
             return True
 
-        if is_output_file_from_sorting_pipeline(output) and "nwb" not in result_item_names:
+        if (
+            is_output_file_from_sorting_pipeline(output)
+            and "nwb" not in result_item_names
+        ):
             logger.debug(
                 f"{desc(computation)} considered errored: results do not contain NWB file"
             )
             return True
     return False
+
 
 def is_output_file_from_sorting_pipeline(output: str) -> bool:
     return all(
@@ -569,10 +591,11 @@ def is_output_file_from_sorting_pipeline(output: str) -> bool:
         for text in ("sorting", "kilosort", "N E X T F L O W".lower())
     )
 
+
 def is_output_file_error(output: str) -> bool:
     """Check if an output file contains text that indicates an error occurred
-    during capsule/pipeline run. 
-    
+    during capsule/pipeline run.
+
     Examples
     --------
     >>> aind_session.ecephys.is_sorted_asset_error('5116b590-c240-4413-8a0f-1686659d13cc') # DockerTimeoutError
@@ -600,6 +623,7 @@ def is_output_file_error(output: str) -> bool:
                 )
                 return True
     return False
+
 
 if __name__ == "__main__":
     from aind_session import testmod

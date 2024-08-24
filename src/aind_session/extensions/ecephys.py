@@ -3,8 +3,8 @@ from __future__ import annotations
 import datetime
 import logging
 
-import codeocean.data_asset
 import codeocean.computation
+import codeocean.data_asset
 import npc_io
 import npc_session
 import upath
@@ -16,6 +16,7 @@ import aind_session.utils.codeocean_utils
 logger = logging.getLogger(__name__)
 
 SORTING_PIPELINE_ID = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
+
 
 @aind_session.extension.register_namespace("ecephys")
 class Ecephys(aind_session.extension.ExtensionBaseClass):
@@ -264,7 +265,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
           104#Neuropix-PXI-100.ProbeF-AP_recording1` - from which `ProbeF` would
           be extracted
         - does not represent the recordings that were sorted
-        
+
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
@@ -315,7 +316,12 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         probes = set()
         for path in parent_dir.iterdir():
             # e.g. experiment1_Record Node 104#Neuropix-PXI-100.ProbeF-AP_recording1
-            probe = path.name.split(".")[1].split('_recording')[0].removesuffix("-AP").removesuffix("-LFP")
+            probe = (
+                path.name.split(".")[1]
+                .split("_recording")[0]
+                .removesuffix("-AP")
+                .removesuffix("-LFP")
+            )
             probes.add(probe)
         logger.debug(f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}")
         return tuple(sorted(probes))
@@ -357,7 +363,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     ) -> None:
         """Run the sorting trigger capsule with the session's raw data asset
         (assumed to be only one). Launches the sorting pipeline then creates a new
-        sorted data asset. 
+        sorted data asset.
 
         - extra parameters can be passed to the capsule as keyword arguments
         - the trigger capsule ID can be specified if necessary
@@ -380,15 +386,19 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                     ),
                     *[
                         codeocean.computation.NamedRunParam(
-                            param_name=k, value=v,
-                        ) for k, v in extra_params.items()
+                            param_name=k,
+                            value=v,
+                        )
+                        for k, v in extra_params.items()
                     ],
                 ],
             )
         )
-        logger.info(f"Triggered sorting pipeline for {asset.id} {asset.name}: monitor at https://codeocean.allenneuraldynamics.org/capsule/6726080/tree")
-    
-    
+        logger.info(
+            f"Triggered sorting pipeline for {asset.id} {asset.name}: monitor at https://codeocean.allenneuraldynamics.org/capsule/6726080/tree"
+        )
+
+
 if __name__ == "__main__":
     from aind_session import testmod
 
