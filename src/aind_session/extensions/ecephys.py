@@ -263,12 +263,16 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         - probe folders named `experiment1_Record Node
           104#Neuropix-PXI-100.ProbeF-AP_recording1` - from which `ProbeF` would
           be extracted
-
+        - does not represent the recordings that were sorted
+        
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.ecephys.sorted_probes
         ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
+        >>> session = aind_session.Session('ecephys_728537_2024-08-21_17-41-36')
+        >>> session.ecephys.sorted_probes
+        ('46100', '46110')
         """
         return self.get_sorted_probe_names(self.sorted_data_asset.id)
 
@@ -311,7 +315,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         probes = set()
         for path in parent_dir.iterdir():
             # e.g. experiment1_Record Node 104#Neuropix-PXI-100.ProbeF-AP_recording1
-            probe = path.name.split(".")[1].split("-AP")[0].split("-LFP")[0]
+            probe = path.name.split(".")[1].split('_recording')[0].removesuffix("-AP").removesuffix("-LFP")
             probes.add(probe)
         logger.debug(f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}")
         return tuple(sorted(probes))
@@ -345,7 +349,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             output.read_text()
         )
 
-    def run_sorting_trigger_capsule(
+    def run_sorting(
         self,
         trigger_capsule_id: str = "eb5a26e4-a391-4d79-9da5-1ab65b71253f",
         raw_data_asset_id_or_model: str | codeocean.data_asset.DataAsset | None = None,
