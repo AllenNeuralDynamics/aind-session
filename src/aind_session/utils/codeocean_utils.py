@@ -1,3 +1,5 @@
+# mypy: disable-error-code=unused-ignore 
+# types-requests has compatibility issue with boto3 https://github.com/python/typeshed/issues/10825
 from __future__ import annotations
 
 import contextlib
@@ -14,7 +16,7 @@ import codeocean.components
 import codeocean.computation
 import codeocean.data_asset
 import npc_session
-import requests
+import requests     # type: ignore # to avoid checking types/installing types-requests
 import upath
 
 import aind_session.utils
@@ -545,8 +547,6 @@ def is_computation_error(computation_id_or_model: codeocean.computation.Computat
         return True
 
     if "output" in result_item_names:
-        # use getattr as a workaround for types-requests incompatibility with boto3 https://github.com/python/typeshed/issues/10825
-        # (unused type:ignore isn't allowed)
         output: str = (requests.get(
             get_codeocean_client()
             .computations.get_result_file_download_url(computation.id, "output")
