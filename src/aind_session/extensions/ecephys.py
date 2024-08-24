@@ -333,7 +333,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.is_sorting_error
+        >>> session.ecephys.is_sorting_fail
         False
         """
         return self.is_sorted_asset_error(self.sorted_data_asset)
