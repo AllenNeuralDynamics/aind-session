@@ -337,7 +337,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         False
         """
         return self.is_sorted_asset_error(self.sorted_data_asset)
-    
+
     @staticmethod
     def is_sorted_asset_error(
         sorted_data_asset_id_or_model: str | codeocean.data_asset.DataAsset,
