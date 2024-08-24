@@ -4,6 +4,7 @@ import datetime
 import logging
 
 import codeocean.data_asset
+import codeocean.computation
 import npc_io
 import npc_session
 import upath
@@ -14,6 +15,7 @@ import aind_session.utils.codeocean_utils
 
 logger = logging.getLogger(__name__)
 
+SORTING_PIPELINE_ID = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
 
 @aind_session.extension.register_namespace("ecephys")
 class Ecephys(aind_session.extension.ExtensionBaseClass):
@@ -343,7 +345,46 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             output.read_text()
         )
 
+    def run_sorting_trigger_capsule(
+        self,
+        trigger_capsule_id: str = "eb5a26e4-a391-4d79-9da5-1ab65b71253f",
+        raw_data_asset_id_or_model: str | codeocean.data_asset.DataAsset | None = None,
+        **extra_params,
+    ) -> None:
+        """Run the sorting trigger capsule with the session's raw data asset
+        (assumed to be only one). Launches the sorting pipeline then creates a new
+        sorted data asset. 
 
+        - extra parameters can be passed to the capsule as keyword arguments
+        - the trigger capsule ID can be specified if necessary
+        - a different raw data asset can be specified if necessary (from any session)
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.run_sorting()       # doctest: +SKIP
+        """
+        asset = aind_session.utils.codeocean_utils.get_data_asset_model(
+            raw_data_asset_id_or_model or self._session.raw_data_asset
+        )
+        aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
+            codeocean.computation.RunParams(
+                capsule_id=trigger_capsule_id,
+                named_parameters=[
+                    codeocean.computation.NamedRunParam(
+                        param_name="input_data_asset_id", value=asset.id
+                    ),
+                    *[
+                        codeocean.computation.NamedRunParam(
+                            param_name=k, value=v,
+                        ) for k, v in extra_params.items()
+                    ],
+                ],
+            )
+        )
+        logger.info(f"Triggered sorting pipeline for {asset.id} {asset.name}: monitor at https://codeocean.allenneuraldynamics.org/capsule/6726080/tree")
+    
+    
 if __name__ == "__main__":
     from aind_session import testmod
 
