@@ -326,6 +326,18 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         logger.debug(f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}")
         return tuple(sorted(probes))
 
+    @npc_io.cached_property
+    def is_sorting_fail(self) -> bool:
+        """Check if the latest sorted data asset indicates that the sorting pipeline failed.
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.is_sorting_error
+        False
+        """
+        return self.is_sorted_asset_error(self.sorted_data_asset)
+    
     @staticmethod
     def is_sorted_asset_error(
         sorted_data_asset_id_or_model: str | codeocean.data_asset.DataAsset,
