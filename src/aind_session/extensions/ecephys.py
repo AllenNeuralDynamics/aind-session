@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import datetime
-import functools
 import logging
 from typing import ClassVar, Literal
 
 import codeocean.computation
 import codeocean.data_asset
-import npc_io
 import npc_session
 import upath
 
@@ -115,13 +113,13 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         if self.is_sorted_asset_error(self.sorted_data_asset):
             return False
         return True
-    
+
     @property
     def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest sorted data asset associated with the session.
 
         Raises `AttributeError` if no sorted data assets are found.
-        
+
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
@@ -144,7 +142,11 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         else:
             raise AttributeError(
                 f"No sorted data asset found for {self._session.id}:",
-        f" raw data has not been uploaded yet." if not self._session.is_uploaded else " try session.ecephys.run_sorting()"
+                (
+                    " raw data has not been uploaded yet."
+                    if not self._session.is_uploaded
+                    else " try session.ecephys.run_sorting()"
+                ),
             )
         logger.debug(f"Using {asset.id=} for {self._session.id} sorted data asset")
         return asset

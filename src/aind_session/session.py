@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-import contextlib
 import datetime
 import logging
 
 import codeocean.data_asset
-import npc_io
 import npc_session
 import upath
 
@@ -172,7 +170,7 @@ class Session:
             return False
         else:
             return True
-        
+
     @property
     def raw_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest raw data asset associated with the session.
@@ -240,7 +238,7 @@ class Session:
             )
             raw_data_dir = aind_session.utils.get_data_asset_source_dir(
                 asset_id=self.raw_data_asset.id,
-                ttl_hash=aind_session.utils.get_ttl_hash()
+                ttl_hash=aind_session.utils.get_ttl_hash(),
             )
             logger.debug(f"Raw data dir found for {self.id}: {raw_data_dir}")
             return raw_data_dir
@@ -251,8 +249,8 @@ class Session:
             )
         except FileNotFoundError:
             raise AttributeError(
-                    f"No raw data asset in CodeOcean and no dir in known data buckets on S3 for {self.id}"
-                ) from None
+                f"No raw data asset in CodeOcean and no dir in known data buckets on S3 for {self.id}"
+            ) from None
         else:
             logger.warning(
                 f"No raw data asset exists for {self.id}, but uploaded data dir found: {path}"
@@ -275,7 +273,9 @@ class Session:
         ('behavior', 'behavior_videos', 'ecephys')
         """
         if not self.is_uploaded:
-            logger.warning(f"Raw data has not been uploaded for {self.id}: no modalities available yet")
+            logger.warning(
+                f"Raw data has not been uploaded for {self.id}: no modalities available yet"
+            )
             return ()
         dir_names: set[str] = {
             d.name for d in self.raw_data_dir.iterdir() if d.is_dir()
