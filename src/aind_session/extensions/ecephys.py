@@ -434,7 +434,11 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             asset = self._session.raw_data_asset
             parameters = [pipeline_type, asset.id]
         if skip_already_sorting:
-            computations = [c for c in self.get_sorting_pipeline_computations(asset.id) if c.end_status is None]
+            computations = [
+                c
+                for c in self.get_sorting_pipeline_computations(asset.id)
+                if c.end_status is None
+            ]
             if computations:
                 logger.warning(
                     f"Sorting is already running for {asset.id}: {[c.name for c in computations]}. Use `skip_already_sorting=False` to force a new pipeline run"
@@ -453,14 +457,16 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         return computation
 
     @property
-    def current_sorting_computations(self) -> tuple[codeocean.computation.Computation, ...]:
+    def current_sorting_computations(
+        self,
+    ) -> tuple[codeocean.computation.Computation, ...]:
         """
         All sorting pipeline computations that have the session's raw data asset
         attached and have not finished.
-        
+
         - running defined as `computation.end_status is None`
         - sorted by ascending creation time
-        
+
         Examples
         --------
         >>> session = aind_session.Session('ecephys_733887_2024-08-16_12-16-49')
@@ -468,11 +474,13 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         ['Run With Parameters 4689084']
         """
         return tuple(
-            computation 
-            for computation in self.get_sorting_pipeline_computations(self._session.raw_data_asset.id)
+            computation
+            for computation in self.get_sorting_pipeline_computations(
+                self._session.raw_data_asset.id
+            )
             if computation.end_status is None
         )
-    
+
     @staticmethod
     def get_sorting_pipeline_computations(
         data_asset_id_or_model: str | codeocean.data_asset.DataAsset,
@@ -480,11 +488,11 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     ) -> tuple[codeocean.computation.Computation, ...]:
         """
         Get all sorting pipeline computations that used a particular data asset.
-        
+
         - sorted by ascending creation time
         - defaults to https://codeocean.allenneuraldynamics.org/capsule/8510735/tree
             - can be overridden with a different pipeline ID
-            
+
         Examples
         --------
         >>> computations = aind_session.ecephys.get_sorting_pipeline_computations('16d46411-540a-4122-b47f-8cb2a15d593a')
@@ -510,7 +518,6 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 key=lambda c: c.created,
             )
         )
-        
 
 
 if __name__ == "__main__":
