@@ -434,11 +434,15 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             asset = self._session.raw_data_asset
             parameters = [pipeline_type, asset.id]
         if skip_already_sorting:
-            current_computations = aind_session.utils.codeocean_utils.search_capsule_computations(
+            current_computations = (
+                aind_session.utils.codeocean_utils.search_capsule_computations(
                     capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
                     data_asset_id=asset.id,
                     in_progress=True,
-                    ttl_hash=aind_session.utils.get_ttl_hash(1), # 1 sec, we want a current check
+                    ttl_hash=aind_session.utils.get_ttl_hash(
+                        1
+                    ),  # 1 sec, we want a current check
+                )
             )
             if current_computations:
                 logger.warning(
@@ -482,7 +486,8 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             in_progress=True,
             ttl_hash=aind_session.utils.get_ttl_hash(1 * 60),
         )
-        
+
+
 if __name__ == "__main__":
     from aind_session import testmod
 
