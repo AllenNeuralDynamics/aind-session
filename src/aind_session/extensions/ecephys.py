@@ -438,7 +438,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                     capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
                     data_asset_id=asset.id,
                     in_progress=True,
-                    ttl_hash=aind_session.utils.get_ttl_hash(1 * 60),
+                    ttl_hash=aind_session.utils.get_ttl_hash(1), # 1 sec, we want a current check
             )
             if current_computations:
                 logger.warning(
