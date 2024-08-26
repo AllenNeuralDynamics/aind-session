@@ -379,7 +379,8 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         (assumed to be only one). Launches the sorting pipeline then creates a new
         sorted data asset.
 
-        - defaults to this trigger capsule:
+        - **note: the trigger capsule needs user secrets attached in order to run**
+        - defaults to this capsule:
             https://codeocean.allenneuraldynamics.org/capsule/6726080/tree
         - the capsule uses positional arguments, so passing extra parameters is
           currently awkward: will update to pass named parameter kwargs in the
