@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+from typing import ClassVar, Literal
 
 import codeocean.computation
 import codeocean.data_asset
@@ -14,8 +15,6 @@ import aind_session.session
 import aind_session.utils.codeocean_utils
 
 logger = logging.getLogger(__name__)
-
-SORTING_PIPELINE_ID = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
 
 
 @aind_session.extension.register_namespace("ecephys")
@@ -34,6 +33,9 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
     """
 
+    SORTING_PIPELINE_ID: ClassVar[str] = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
+    TRIGGER_CAPSULE_ID: ClassVar[str] = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
+    
     @npc_io.cached_property
     def sorted_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """All sorted data assets associated with the session (may be empty).
@@ -369,47 +371,55 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
     def run_sorting(
         self,
+        pipeline_type: Literal['ecephys', 'ecephys_opto', 'ecephys_analyzer'] = 'ecephys',
         trigger_capsule_id: str = "eb5a26e4-a391-4d79-9da5-1ab65b71253f",
-        raw_data_asset_id_or_model: str | codeocean.data_asset.DataAsset | None = None,
-        **extra_params,
-    ) -> None:
+        override_parameters: list[str] | None = None,
+    ) -> codeocean.computation.Computation:
         """Run the sorting trigger capsule with the session's raw data asset
         (assumed to be only one). Launches the sorting pipeline then creates a new
         sorted data asset.
 
-        - extra parameters can be passed to the capsule as keyword arguments
-        - the trigger capsule ID can be specified if necessary
-        - a different raw data asset can be specified if necessary (from any session)
-
+        - defaults to this trigger capsule:
+            https://codeocean.allenneuraldynamics.org/capsule/6726080/tree
+        - the capsule uses positional arguments, so passing extra parameters is
+          currently awkward: will update to pass named parameter kwargs in the
+          future
+            - if needed, you can override the parameters used with a custom list
+        
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.run_sorting()       # doctest: +SKIP
+        >>> computation = session.ecephys.run_sorting()       # doctest: +SKIP
+        
+        # Supply list of positional arguments (pipeline type and data asset ID are
+        required)
+        >>> override_parameters = ['ecephys_opto', session.raw_data_asset.id] 
+        >>> session.ecephys.run_sorting(override_parameters) # doctest: +SKIP 
         """
-        asset = aind_session.utils.codeocean_utils.get_data_asset_model(
-            raw_data_asset_id_or_model or self._session.raw_data_asset
+        if override_parameters:
+            if len(override_parameters) < 2:
+                raise ValueError(
+                    "At least two parameters are required: data asset ID is the second parameter. See https://codeocean.allenneuraldynamics.org/capsule/6726080/tree"
+                )
+            logger.debug("Using custom parameters to trigger sorting pipeline")
+            parameters = override_parameters
+            asset = aind_session.utils.codeocean_utils.get_data_asset_model(parameters[1])
+        else:
+            asset = self._session.raw_data_asset
+            parameters = [pipeline_type, asset.id]
+        logger.debug(
+            f"Triggering sorting pipeline with {parameters=}"
         )
-        aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
+        computation = aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
             codeocean.computation.RunParams(
                 capsule_id=trigger_capsule_id,
-                named_parameters=[
-                    codeocean.computation.NamedRunParam(
-                        param_name="input_data_asset_id", value=asset.id
-                    ),
-                    *[
-                        codeocean.computation.NamedRunParam(
-                            param_name=k,
-                            value=v,
-                        )
-                        for k, v in extra_params.items()
-                    ],
-                ],
+                parameters=parameters,
             )
         )
         logger.info(
-            f"Triggered sorting pipeline for {asset.id} {asset.name}: monitor at https://codeocean.allenneuraldynamics.org/capsule/6726080/tree"
+            f"Triggered sorting pipeline for {asset.id} {asset.name}: monitor {computation.name!r} at https://codeocean.allenneuraldynamics.org/capsule/6726080/tree"
         )
-
+        return computation
 
 if __name__ == "__main__":
     from aind_session import testmod
