@@ -431,7 +431,7 @@ def search_data_assets(
 
 
 @functools.cache
-def search_capsule_computations(
+def search_computations(
     capsule_or_pipeline_id: str | uuid.UUID,
     name: str | None = None,
     data_asset_id: str | None = None,
@@ -459,12 +459,14 @@ def search_capsule_computations(
     --------
 
     >>> pipeline_id = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
-    >>> computations = search_capsule_computations(pipeline_id, in_progress=True)
+    >>> computations = search_computations(pipeline_id, in_progress=True)
     >>> len(computations)               # doctest: +SKIP
     1
-    >>> computations = search_capsule_computations(pipeline_id, name="Run With Parameters 4689084")
-    >>> computations = search_capsule_computations(pipeline_id, data_asset_id="83636983-f80d-42d6-a075-09b60c6abd5e")
-    >>> computations = search_capsule_computations(pipeline_id, computation_state="failed")
+    >>> computations = search_computations(pipeline_id, name="Run With Parameters 4689084")
+    >>> computations = search_computations(pipeline_id, data_asset_id="83636983-f80d-42d6-a075-09b60c6abd5e")
+    >>> computations = search_computations(pipeline_id, computation_state="failed")
+    >>> capsule_id = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
+    >>> computations = search_computations(pipeline_id, in_progress=True)
     """
     del ttl_hash  # only used for functools.cache
 

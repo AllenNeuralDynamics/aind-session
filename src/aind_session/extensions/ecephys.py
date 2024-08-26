@@ -435,7 +435,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             parameters = [pipeline_type, asset.id]
         if skip_already_sorting:
             current_computations = (
-                aind_session.utils.codeocean_utils.search_capsule_computations(
+                aind_session.utils.codeocean_utils.search_computations(
                     capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
                     data_asset_id=asset.id,
                     in_progress=True,
@@ -480,7 +480,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> [c.name for c in computations]   # doctest: +SKIP
         ['Run With Parameters 4689084']
         """
-        return aind_session.utils.codeocean_utils.search_capsule_computations(
+        return aind_session.utils.codeocean_utils.search_computations(
             capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
             data_asset_id=self._session.raw_data_asset.id,
             in_progress=True,
