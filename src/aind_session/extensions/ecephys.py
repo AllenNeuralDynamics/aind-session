@@ -420,11 +420,6 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> override_parameters = ['ecephys_opto', session.raw_data_asset.id]
         >>> session.ecephys.run_sorting(override_parameters) # doctest: +SKIP
         """
-        if skip_already_sorting and not override_parameters and self.is_sorting:
-            logger.warning(
-                f"Sorting is already running for {self._session.id}: use `skip_already_sorting=False` to force a new pipeline run"
-            )
-            return
         if override_parameters:
             if len(override_parameters) < 2:
                 raise ValueError(
@@ -438,6 +433,13 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         else:
             asset = self._session.raw_data_asset
             parameters = [pipeline_type, asset.id]
+        if skip_already_sorting:
+            computations = [c for c in self.get_sorting_pipeline_computations(asset.id) if c.end_status is None]
+            if computations:
+                logger.warning(
+                    f"Sorting is already running for {asset.id}: {[c.name for c in computations]}. Use `skip_already_sorting=False` to force a new pipeline run"
+                )
+                return
         logger.debug(f"Triggering sorting pipeline with {parameters=}")
         computation = aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
             codeocean.computation.RunParams(
