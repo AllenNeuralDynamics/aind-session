@@ -451,29 +451,64 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         return computation
 
     @property
-    def is_sorting(self) -> bool:
+    def current_sorting_computations(self) -> tuple[codeocean.computation.Computation, ...]:
         """
-        Whether the raw data asset is currently attached to a pipeline computation
-        that hasn't finished.
-
+        All sorting pipeline computations that have the session's raw data asset
+        attached and have not finished.
+        
+        - running defined as `computation.end_status is None`
+        - sorted by ascending creation time
+        
         Examples
         --------
         >>> session = aind_session.Session('ecephys_733887_2024-08-16_12-16-49')
-        >>> session.ecephys.is_sorting     # doctest: +SKIP
-        True
+        >>> [c.name for c in session.ecephys.running_sorting_computations]   # doctest: +SKIP
+        ['Run With Parameters 4689084']
         """
-        running_computations = [
-            computation
-            for computation in aind_session.get_codeocean_client().capsules.list_computations(
-                aind_session.ecephys.SORTING_PIPELINE_ID
-            )
+        return tuple(
+            computation 
+            for computation in self.get_sorting_pipeline_computations(self._session.raw_data_asset.id)
             if computation.end_status is None
-        ]
-        return any(
-            input_data_asset.id == self._session.raw_data_asset.id
-            for computation in running_computations
-            for input_data_asset in computation.data_assets
         )
+    
+    @staticmethod
+    def get_sorting_pipeline_computations(
+        data_asset_id_or_model: str | codeocean.data_asset.DataAsset,
+        sorting_pipeline_id: str = SORTING_PIPELINE_ID,
+    ) -> tuple[codeocean.computation.Computation, ...]:
+        """
+        Get all sorting pipeline computations that used a particular data asset.
+        
+        - sorted by ascending creation time
+        - defaults to https://codeocean.allenneuraldynamics.org/capsule/8510735/tree
+            - can be overridden with a different pipeline ID
+            
+        Examples
+        --------
+        >>> computations = aind_session.ecephys.get_sorting_pipeline_computations('16d46411-540a-4122-b47f-8cb2a15d593a')
+        >>> current_computations = [c for c in computations if c.end_status is None]
+        >>> [c.name for c in current_computations]    # doctest: +SKIP
+        ['Run With Parameters 4689084']
+        """
+        asset_id = aind_session.utils.codeocean_utils.get_normalized_uuid(
+            data_asset_id_or_model
+        )
+        return tuple(
+            sorted(
+                [
+                    computation
+                    for computation in aind_session.get_codeocean_client().capsules.list_computations(
+                        sorting_pipeline_id
+                    )
+                    if any(
+                        input_data_asset.id == asset_id
+                        for input_data_asset in computation.data_assets
+                    )
+                ],
+                key=lambda c: c.created,
+            )
+        )
+        
 
 
 if __name__ == "__main__":
