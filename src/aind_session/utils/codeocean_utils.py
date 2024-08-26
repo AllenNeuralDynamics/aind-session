@@ -463,10 +463,10 @@ def search_computations(
 
     >>> pipeline_id = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
     >>> computations = search_computations(pipeline_id)
-    
+
     >>> len(computations)               # doctest: +SKIP
     1
-    
+
     Filter by computation metadata:
     >>> computations = search_computations(pipeline_id, in_progress=True)
     >>> computations = search_computations(pipeline_id, computation_state="failed")
