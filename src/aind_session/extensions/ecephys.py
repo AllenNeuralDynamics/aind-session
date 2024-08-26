@@ -35,7 +35,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
     SORTING_PIPELINE_ID: ClassVar[str] = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
     TRIGGER_CAPSULE_ID: ClassVar[str] = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
-    
+
     @npc_io.cached_property
     def sorted_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """All sorted data assets associated with the session (may be empty).
@@ -371,7 +371,9 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
     def run_sorting(
         self,
-        pipeline_type: Literal['ecephys', 'ecephys_opto', 'ecephys_analyzer'] = 'ecephys',
+        pipeline_type: Literal[
+            "ecephys", "ecephys_opto", "ecephys_analyzer"
+        ] = "ecephys",
         trigger_capsule_id: str = "eb5a26e4-a391-4d79-9da5-1ab65b71253f",
         override_parameters: list[str] | None = None,
     ) -> codeocean.computation.Computation:
@@ -386,16 +388,16 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
           currently awkward: will update to pass named parameter kwargs in the
           future
             - if needed, you can override the parameters used with a custom list
-        
+
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> computation = session.ecephys.run_sorting()       # doctest: +SKIP
-        
+
         # Supply list of positional arguments (pipeline type and data asset ID are
         required)
-        >>> override_parameters = ['ecephys_opto', session.raw_data_asset.id] 
-        >>> session.ecephys.run_sorting(override_parameters) # doctest: +SKIP 
+        >>> override_parameters = ['ecephys_opto', session.raw_data_asset.id]
+        >>> session.ecephys.run_sorting(override_parameters) # doctest: +SKIP
         """
         if override_parameters:
             if len(override_parameters) < 2:
@@ -404,13 +406,13 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 )
             logger.debug("Using custom parameters to trigger sorting pipeline")
             parameters = override_parameters
-            asset = aind_session.utils.codeocean_utils.get_data_asset_model(parameters[1])
+            asset = aind_session.utils.codeocean_utils.get_data_asset_model(
+                parameters[1]
+            )
         else:
             asset = self._session.raw_data_asset
             parameters = [pipeline_type, asset.id]
-        logger.debug(
-            f"Triggering sorting pipeline with {parameters=}"
-        )
+        logger.debug(f"Triggering sorting pipeline with {parameters=}")
         computation = aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
             codeocean.computation.RunParams(
                 capsule_id=trigger_capsule_id,
@@ -421,6 +423,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             f"Triggered sorting pipeline for {asset.id} {asset.name}: monitor {computation.name!r} at https://codeocean.allenneuraldynamics.org/capsule/6726080/tree"
         )
         return computation
+
 
 if __name__ == "__main__":
     from aind_session import testmod
