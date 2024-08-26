@@ -6,7 +6,7 @@ import time
 logger = logging.getLogger(__name__)
 
 
-def get_ttl_hash(seconds: float = 2 * 60) -> int:
+def get_ttl_hash(seconds: float = 10 * 60) -> int:
     """Return the same value within `seconds` time period.
 
     - used to cache function results for a limited period of time

@@ -62,6 +62,8 @@ pip install aind_session
 datetime.datetime(2023, 12, 13, 13, 43, 40)
 >>> len(session.data_assets)            # doctest: +SKIP
 42
+>>> session.is_uploaded
+True
 >>> session.raw_data_asset.id
 '16d46411-540a-4122-b47f-8cb2a15d593a'
 >>> session.raw_data_dir.as_posix()
@@ -72,6 +74,8 @@ datetime.datetime(2023, 12, 13, 13, 43, 40)
 # Additional functionality in namespace extensions:
 >>> session.metadata.subject['genotype']
 'Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt'
+>>> session.ecephys.is_sorted
+True
 >>> session.ecephys.sorted_data_asset.name
 'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
 

@@ -60,7 +60,7 @@ class Session:
     >>> session.raw_data_dir.as_posix()
     Traceback (most recent call last):
     ...
-    FileNotFoundError: No raw data asset in CodeOcean and no dir in known data buckets on S3 for SmartSPIM_698260_2024-07-20_21-47-21
+    AttributeError: No raw data asset in CodeOcean and no dir in known data buckets on S3 for SmartSPIM_698260_2024-07-20_21-47-21
 
     Additional functionality for modalities added by extensions:
     >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
@@ -129,7 +129,7 @@ class Session:
         """
         return self.id < other.id
 
-    @npc_io.cached_property
+    @property
     def data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """All data assets associated with the session.
 
@@ -143,13 +143,42 @@ class Session:
         >>> session.data_assets[0].name
         'ecephys_676909_2023-12-13_13-43-40'
         """
-        return aind_session.utils.get_session_data_assets(self.id)
+        return aind_session.utils.get_session_data_assets(
+            session_id=self.id,
+            ttl_hash=aind_session.utils.get_ttl_hash(),
+        )
 
-    @npc_io.cached_property
+    @property
+    def is_uploaded(self) -> bool:
+        """Check if the session's raw data has been uploaded.
+
+        - returns `True` if any raw data assets exist, or raw data dir found in S3
+        - returns `False` otherwise
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.is_uploaded
+        True
+        """
+        if getattr(self, "raw_data_asset", None) is not None:
+            return True
+        try:
+            _ = aind_session.utils.get_source_dir_by_name(
+                name=self.id,
+                ttl_hash=aind_session.utils.get_ttl_hash(),
+            )
+        except FileNotFoundError:
+            return False
+        else:
+            return True
+        
+    @property
     def raw_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest raw data asset associated with the session.
 
-        - raises `LookupError` if no raw data assets are found
+        - raises `AttributeError` if no raw data assets are found, so `getattr()`
+          can be used to lookup the attribute without raising an exception
 
         Examples
         --------
@@ -175,20 +204,28 @@ class Session:
                 f"Found {len(assets)} raw data assets for {self.id}: latest asset will be used ({created=})"
             )
         else:
-            raise LookupError(
-                f"No raw data asset found for {self.id}. Has session data been uploaded?"
-            )
+            msg = f"No raw data assets found for {self.id}."
+            try:
+                path = aind_session.utils.get_source_dir_by_name(
+                    name=self.id,
+                    ttl_hash=aind_session.utils.get_ttl_hash(),
+                )
+            except FileNotFoundError:
+                msg += " The session has likely not been uploaded."
+            else:
+                msg += f" Raw data found in {path.as_posix()}: a raw data asset needs to be created."
+            raise AttributeError(msg)
         logger.debug(f"Using {asset.id=} for {self.id} raw data asset")
         return asset
 
-    @npc_io.cached_property
+    @property
     def raw_data_dir(self) -> upath.UPath:
         """Path to the dir containing raw data associated with the session, likely
         in an S3 bucket.
 
         - uses latest raw data asset to get path (existence is checked)
         - if no raw data asset is found, checks for a data dir in S3
-        - raises `FileNotFoundError` if no raw data assets are available to link
+        - raises `AttributeError` if no raw data assets are available to link
           to the session
 
         Examples
@@ -197,29 +234,32 @@ class Session:
         >>> session.raw_data_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
         """
-        try:
-            _ = self.raw_data_asset
-        except LookupError:
-            with contextlib.suppress(FileNotFoundError):
-                path = aind_session.utils.get_source_dir_by_name(self.id)
-                logger.debug(
-                    f"No raw data asset uploaded for {self.id}, but data dir found: {path}"
-                )
-                return path
-            raise FileNotFoundError(
-                f"No raw data asset in CodeOcean and no dir in known data buckets on S3 for {self.id}"
-            ) from None
-        else:
+        if getattr(self, "raw_data_asset", None):
             logger.debug(
                 f"Using asset {self.raw_data_asset.id} to find raw data path for {self.id}"
             )
             raw_data_dir = aind_session.utils.get_data_asset_source_dir(
                 asset_id=self.raw_data_asset.id,
+                ttl_hash=aind_session.utils.get_ttl_hash()
             )
             logger.debug(f"Raw data dir found for {self.id}: {raw_data_dir}")
             return raw_data_dir
+        try:
+            path = aind_session.utils.get_source_dir_by_name(
+                name=self.id,
+                ttl_hash=aind_session.utils.get_ttl_hash(),
+            )
+        except FileNotFoundError:
+            raise AttributeError(
+                    f"No raw data asset in CodeOcean and no dir in known data buckets on S3 for {self.id}"
+                ) from None
+        else:
+            logger.warning(
+                f"No raw data asset exists for {self.id}, but uploaded data dir found: {path}"
+            )
+            return path
 
-    @npc_io.cached_property
+    @property
     def modalities(self) -> tuple[str, ...]:
         """Names of modalities available in the session's raw data dir.
 
@@ -234,6 +274,9 @@ class Session:
         >>> session.modalities
         ('behavior', 'behavior_videos', 'ecephys')
         """
+        if not self.is_uploaded:
+            logger.warning(f"Raw data has not been uploaded for {self.id}: no modalities available yet")
+            return ()
         dir_names: set[str] = {
             d.name for d in self.raw_data_dir.iterdir() if d.is_dir()
         }
@@ -279,7 +322,7 @@ def get_sessions(
         - `datetime.date` and `datetime.datetime` objects are also accepted
 
     - raises `ValueError` if any of the provided filtering arguments are invalid
-    - raises `LookupError` if no sessions are found matching the criteria
+    - returns an empty tuple if no sessions are found matching the criteria
 
     - note on performance and CodeOcean API calls: all assets associated with a
       subject are fetched once and cached, so subsequent calls to this function
@@ -336,7 +379,7 @@ def get_sessions(
             continue
         sessions.add(session)
     if not sessions:
-        raise LookupError(f"No sessions found matching {parameters=}")
+        logger.info(f"No sessions found matching {parameters=}")
     return tuple(sorted(sessions))
 
 

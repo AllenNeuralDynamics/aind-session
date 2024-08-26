@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import functools
 import logging
 from typing import ClassVar, Literal
 
@@ -36,7 +37,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
     SORTING_PIPELINE_ID: ClassVar[str] = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
     TRIGGER_CAPSULE_ID: ClassVar[str] = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
 
-    @npc_io.cached_property
+    @property
     def sorted_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """All sorted data assets associated with the session (may be empty).
 
@@ -50,7 +51,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.sorted_data_assets[0].created
         1702783011
 
-        Empty
+        Empty if no sorted data assets are found:
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-39')
         >>> session.ecephys.sorted_data_assets
         ()
@@ -99,12 +100,28 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             )
             return False
 
-    @npc_io.cached_property
+    @property
+    def is_sorted(self) -> bool:
+        """Check if a sorted data asset exists, and is not in an error state.
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.is_sorted
+        True
+        """
+        if not self.sorted_data_assets:
+            return False
+        if self.is_sorted_asset_error(self.sorted_data_asset):
+            return False
+        return True
+    
+    @property
     def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest sorted data asset associated with the session.
 
-        Raises `LookupError` if no sorted data assets are found.
-
+        Raises `AttributeError` if no sorted data assets are found.
+        
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
@@ -125,20 +142,21 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 f"Found {len(self.sorted_data_assets)} sorted data assets for {self._session.id}: most recent asset will be used ({created=})"
             )
         else:
-            raise LookupError(
-                f"No sorted data asset found for {self._session.id}. Has session data been uploaded?"
+            raise AttributeError(
+                f"No sorted data asset found for {self._session.id}:",
+        f" raw data has not been uploaded yet." if not self._session.is_uploaded else " try session.ecephys.run_sorting()"
             )
         logger.debug(f"Using {asset.id=} for {self._session.id} sorted data asset")
         return asset
 
-    @npc_io.cached_property
+    @property
     def sorted_data_dir(self) -> upath.UPath:
         """Path to the dir containing the latest sorted data associated with the
         session, likely in an S3 bucket.
 
         - uses latest sorted data asset to get path (existence is checked)
         - if no sorted data asset is found, checks for a data dir in S3
-        - raises `FileNotFoundError` if no sorted data assets are available to link
+        - raises `AttributeError` if no sorted data assets are available to link
           to the session
 
         Examples
@@ -149,8 +167,8 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         """
         try:
             _ = self.sorted_data_asset
-        except LookupError:
-            raise FileNotFoundError(
+        except AttributeError:
+            raise AttributeError(
                 f"No sorted data asset found in CodeOcean for {self._session.id}. Has the session been sorted?"
             ) from None
         else:
@@ -167,7 +185,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             )
             return sorted_data_dir
 
-    @npc_io.cached_property
+    @property
     def clipped_dir(self) -> upath.UPath:
         """Path to the dir containing original Open Ephys recording data, with
         truncated `continuous.dat` files.
@@ -186,12 +204,12 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 self._session.raw_data_asset.id
             )[0]
         ) is None:
-            raise FileNotFoundError(
+            raise AttributeError(
                 f"No 'clipped' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
             )
         return path
 
-    @npc_io.cached_property
+    @property
     def compressed_dir(self) -> upath.UPath:
         """
         Path to the dir containing compressed zarr format versions of Open Ephys
@@ -211,7 +229,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 self._session.raw_data_asset.id
             )[1]
         ) is None:
-            raise FileNotFoundError(
+            raise AttributeError(
                 f"No 'compressed' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
             )
         return path
@@ -256,7 +274,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         assert len(return_paths) == 2
         return return_paths[0], return_paths[1]
 
-    @npc_io.cached_property
+    @property
     def sorted_probes(self) -> tuple[str, ...]:
         """Names of probes that reached the final stage of the sorting pipeline.
 
@@ -328,7 +346,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         logger.debug(f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}")
         return tuple(sorted(probes))
 
-    @npc_io.cached_property
+    @property
     def is_sorting_fail(self) -> bool:
         """Check if the latest sorted data asset indicates that the sorting pipeline failed.
 
