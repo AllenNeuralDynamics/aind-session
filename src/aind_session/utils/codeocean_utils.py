@@ -431,6 +431,89 @@ def search_data_assets(
 
 
 @functools.cache
+def search_capsule_computations(
+    capsule_or_pipeline_id: str | uuid.UUID,
+    name: str | None = None,
+    data_asset_id: str | None = None,
+    in_progress: bool | None = None,
+    computation_state: codeocean.computation.ComputationState | None = None,
+    ttl_hash: int | None = None,
+) -> tuple[codeocean.computation.Computation, ...]:
+    """
+    Search for capsule or pipeline computations with specific attributes. 
+    
+    - implements the same get request as `codeocean.client.Computations.list_computations` but
+    with pre-filtering on the response json
+    - with no filters, this may be slow:
+        - test with 1300 computations took ~1.5s to get the response and ~8s to
+          make the `codeocean.computation.Computation` models from json
+    - sorted by ascending creation time
+    - `in_progress` True/False can be used to filter on whether the computation
+      has ended
+    - `data_asset_id` can be used to filter on whether the computation was run
+      with the data asset attached
+    - by default, this function caches the result indefinitely: supply with a
+      `aind_session.utils.ttl_hash(sec)` to cache for a given number of seconds
+      
+    Examples
+    --------
+    
+    >>> pipeline_id = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
+    >>> computations = search_capsule_computations(pipeline_id, in_progress=True)
+    >>> len(computations)               # doctest: +SKIP
+    1
+    >>> computations = search_capsule_computations(pipeline_id, name="Run With Parameters 4689084")
+    >>> computations = search_capsule_computations(pipeline_id, data_asset_id="83636983-f80d-42d6-a075-09b60c6abd5e")
+    >>> computations = search_capsule_computations(pipeline_id, computation_state="failed")
+    """
+    del ttl_hash  # only used for functools.cache
+    
+    capsule_or_pipeline_id = get_normalized_uuid(capsule_or_pipeline_id)
+    
+    t0 = time.time()
+    records = get_codeocean_client().session.get(f"capsules/{capsule_or_pipeline_id}/computations").json()
+    logger.debug(f"{len(records)} computation records returned from server in {time.time() - t0:.3f}s")
+    if name is not None:
+        records = [
+            record
+            for record in records
+            if record["name"] == name
+        ]
+    if data_asset_id is not None:
+        records = [
+            record
+            for record in records
+            if any(
+                input_data_asset["id"] == data_asset_id
+                for input_data_asset in record.get("data_assets", [])
+            )
+        ]
+    if in_progress is not None:
+        records = [
+            record
+            for record in records
+            if bool(record["end_status"]) != bool(in_progress)
+        ]
+    if computation_state is not None:
+        records = [
+            record
+            for record in records
+            if record["state"] == computation_state
+        ]
+    t0 = time.time()
+    computations = tuple(
+        sorted(
+            [
+                codeocean.computation.Computation.from_dict(record)
+                for record in records
+            ],
+            key=lambda c: c.created,
+        )
+    )
+    logger.debug(f"{len(computations)} computation models created in {time.time() - t0:.3f}s")
+    return computations
+
+@functools.cache
 def get_session_data_assets(
     session_id: str | npc_session.AINDSessionRecord,
     ttl_hash: int | None = None,

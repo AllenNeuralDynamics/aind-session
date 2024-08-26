@@ -434,14 +434,15 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             asset = self._session.raw_data_asset
             parameters = [pipeline_type, asset.id]
         if skip_already_sorting:
-            computations = [
-                c
-                for c in self.get_sorting_pipeline_computations(asset.id)
-                if c.end_status is None
-            ]
-            if computations:
+            current_computations = aind_session.utils.codeocean_utils.search_capsule_computations(
+                    capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
+                    data_asset_id=asset.id,
+                    in_progress=True,
+                    ttl_hash=aind_session.utils.get_ttl_hash(1 * 60),
+            )
+            if current_computations:
                 logger.warning(
-                    f"Sorting is already running for {asset.id}: {[c.name for c in computations]}. Use `skip_already_sorting=False` to force a new pipeline run"
+                    f"Sorting is already running for {asset.id}: {[c.name for c in current_computations]}. Use `skip_already_sorting=False` to force a new pipeline run"
                 )
                 return
         logger.debug(f"Triggering sorting pipeline with {parameters=}")
@@ -466,60 +467,22 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
 
         - running defined as `computation.end_status is None`
         - sorted by ascending creation time
-
+        - defaults to https://codeocean.allenneuraldynamics.org/capsule/8510735/tree
+            - can be overridden with a different pipeline ID
         Examples
         --------
         >>> session = aind_session.Session('ecephys_733887_2024-08-16_12-16-49')
-        >>> [c.name for c in session.ecephys.running_sorting_computations]   # doctest: +SKIP
+        >>> computations = session.ecephys.current_sorting_computations
+        >>> [c.name for c in computations]   # doctest: +SKIP
         ['Run With Parameters 4689084']
         """
-        return tuple(
-            computation
-            for computation in self.get_sorting_pipeline_computations(
-                self._session.raw_data_asset.id
-            )
-            if computation.end_status is None
+        return aind_session.utils.codeocean_utils.search_capsule_computations(
+            capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
+            data_asset_id=self._session.raw_data_asset.id,
+            in_progress=True,
+            ttl_hash=aind_session.utils.get_ttl_hash(1 * 60),
         )
-
-    @staticmethod
-    def get_sorting_pipeline_computations(
-        data_asset_id_or_model: str | codeocean.data_asset.DataAsset,
-        sorting_pipeline_id: str = SORTING_PIPELINE_ID,
-    ) -> tuple[codeocean.computation.Computation, ...]:
-        """
-        Get all sorting pipeline computations that used a particular data asset.
-
-        - sorted by ascending creation time
-        - defaults to https://codeocean.allenneuraldynamics.org/capsule/8510735/tree
-            - can be overridden with a different pipeline ID
-
-        Examples
-        --------
-        >>> computations = aind_session.ecephys.get_sorting_pipeline_computations('16d46411-540a-4122-b47f-8cb2a15d593a')
-        >>> current_computations = [c for c in computations if c.end_status is None]
-        >>> [c.name for c in current_computations]    # doctest: +SKIP
-        ['Run With Parameters 4689084']
-        """
-        asset_id = aind_session.utils.codeocean_utils.get_normalized_uuid(
-            data_asset_id_or_model
-        )
-        return tuple(
-            sorted(
-                [
-                    computation
-                    for computation in aind_session.get_codeocean_client().capsules.list_computations(
-                        sorting_pipeline_id
-                    )
-                    if any(
-                        input_data_asset.id == asset_id
-                        for input_data_asset in computation.data_assets
-                    )
-                ],
-                key=lambda c: c.created,
-            )
-        )
-
-
+        
 if __name__ == "__main__":
     from aind_session import testmod
 
