@@ -457,16 +457,21 @@ def search_computations(
 
     Examples
     --------
+    Get all computations for a capsule or pipeline:
+    >>> capsule_id = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
+    >>> computations = search_computations(capsule_id)
 
     >>> pipeline_id = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
-    >>> computations = search_computations(pipeline_id, in_progress=True)
+    >>> computations = search_computations(pipeline_id)
+    
     >>> len(computations)               # doctest: +SKIP
     1
+    
+    Filter by computation metadata:
+    >>> computations = search_computations(pipeline_id, in_progress=True)
+    >>> computations = search_computations(pipeline_id, computation_state="failed")
     >>> computations = search_computations(pipeline_id, name="Run With Parameters 4689084")
     >>> computations = search_computations(pipeline_id, data_asset_id="83636983-f80d-42d6-a075-09b60c6abd5e")
-    >>> computations = search_computations(pipeline_id, computation_state="failed")
-    >>> capsule_id = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
-    >>> computations = search_computations(pipeline_id, in_progress=True)
     """
     del ttl_hash  # only used for functools.cache
 
