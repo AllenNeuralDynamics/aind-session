@@ -396,6 +396,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         ] = "ecephys",
         trigger_capsule_id: str = "eb5a26e4-a391-4d79-9da5-1ab65b71253f",
         override_parameters: list[str] | None = None,
+        skip_already_sorting: bool = True,
     ) -> codeocean.computation.Computation:
         """Run the sorting trigger capsule with the session's raw data asset
         (assumed to be only one). Launches the sorting pipeline then creates a new
@@ -419,6 +420,11 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> override_parameters = ['ecephys_opto', session.raw_data_asset.id]
         >>> session.ecephys.run_sorting(override_parameters) # doctest: +SKIP
         """
+        if skip_already_sorting and not override_parameters and self.is_sorting:
+            logger.warning(
+                f"Sorting is already running for {self._session.id}: use `skip_already_sorting=False` to force a new pipeline run"
+            )
+            return
         if override_parameters:
             if len(override_parameters) < 2:
                 raise ValueError(
@@ -443,6 +449,31 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             f"Triggered sorting pipeline for {asset.id} {asset.name}: monitor {computation.name!r} at https://codeocean.allenneuraldynamics.org/capsule/6726080/tree"
         )
         return computation
+
+    @property
+    def is_sorting(self) -> bool:
+        """
+        Whether the raw data asset is currently attached to a pipeline computation
+        that hasn't finished.
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_733887_2024-08-16_12-16-49')
+        >>> session.ecephys.is_sorting     # doctest: +SKIP
+        True
+        """
+        running_computations = [
+            computation
+            for computation in aind_session.get_codeocean_client().capsules.list_computations(
+                aind_session.ecephys.SORTING_PIPELINE_ID
+            )
+            if computation.end_status is None
+        ]
+        return any(
+            input_data_asset.id == self._session.raw_data_asset.id
+            for computation in running_computations
+            for input_data_asset in computation.data_assets
+        )
 
 
 if __name__ == "__main__":
