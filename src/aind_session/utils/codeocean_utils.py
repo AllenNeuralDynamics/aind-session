@@ -610,6 +610,7 @@ def is_output_file_error(output: str) -> bool:
         "The CUDA error was:",
         "Traceback (most recent call last):",
         "Command error:",
+        "WARN: Killing running tasks",
     ):
         if error_text in output:
             if "CUDA" in error_text and is_output_file_from_sorting_pipeline(output):
