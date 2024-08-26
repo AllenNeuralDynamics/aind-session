@@ -492,7 +492,18 @@ def search_capsule_computations(
         records = [
             record
             for record in records
-            if bool(record["end_status"]) != bool(in_progress)
+            if (
+                record["state"] in (
+                codeocean.computation.ComputationState.Completed,
+                codeocean.computation.ComputationState.Failed,
+                ) and in_progress is False
+            ) or (
+                record["state"] in (
+                codeocean.computation.ComputationState.Running,
+                codeocean.computation.ComputationState.Initializing,
+                codeocean.computation.ComputationState.Finalizing,
+                ) and in_progress is True
+            )
         ]
     if computation_state is not None:
         records = [
