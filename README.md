@@ -70,6 +70,8 @@ True
 's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
 >>> session.modalities
 ('behavior', 'behavior_videos', 'ecephys')
+>>> session.docdb.keys()
+dict_keys(['_id', 'acquisition', 'created', 'data_description', 'describedBy', 'external_links', 'instrument', 'last_modified', 'location', 'metadata_status', 'name', 'procedures', 'processing', 'rig', 'schema_version', 'session', 'subject'])
 
 # Additional functionality in namespace extensions:
 >>> session.metadata.subject['genotype']

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
+from typing import Any
 
 import codeocean.data_asset
 import npc_session
@@ -54,7 +55,7 @@ class Session:
     >>> session.raw_data_dir.as_posix()
     's3://aind-private-data-prod-o5171v/behavior_717121_2024-06-16_11-39-34'
 
-    >>> session = Session('SmartSPIM_698260_2024-07-20_21-47-21')
+    >>> session = Session('SmartSPIM_123456_2024-07-20_21-47-21')
     >>> session.raw_data_dir.as_posix()
     Traceback (most recent call last):
     ...
@@ -232,6 +233,8 @@ class Session:
         >>> session.raw_data_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
         """
+        if (p := self.docdb.get("location")):
+            return upath.UPath(p)
         if getattr(self, "raw_data_asset", None):
             logger.debug(
                 f"Using asset {self.raw_data_asset.id} to find raw data path for {self.id}"
@@ -292,6 +295,21 @@ class Session:
                     dir_names.remove(name)
                     logger.debug(f"Excluding {name!r} from modality names")
         return tuple(sorted(dir_names))
+    
+    @property
+    def docdb(self) -> dict[str, Any]:
+        """Contents of the session's DocumentDB record.
+        
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> docdb = session.docdb
+        >>> type(docdb)
+        dict
+        >>> docdb.keys()       # doctest: +SKIP
+        dict_keys(['_id', 'acquisition', 'created', 'data_description', 'describedBy', 'external_links', 'instrument', 'last_modified', 'location', 'metadata_status', 'name', 'procedures', 'processing', 'rig', 'schema_version', 'session', 'subject'])
+        """
+        return aind_session.utils.get_docdb_record(self.id)
 
 
 def get_sessions(

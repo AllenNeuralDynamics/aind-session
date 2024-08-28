@@ -185,16 +185,17 @@ def is_raw_data_asset(
             f"{asset.id=} name does not contain a valid session ID: {asset.name=}"
         )
         return False
-    if session_id == asset.name:
-        logger.debug(
-            f"{asset.id=} name is a session ID alone, with no additional suffixes: it is considered raw data {asset.name=}"
-        )
-        return True
     else:
-        logger.debug(
-            f"{asset.id=} name is not a session ID alone: it is not considered raw data {asset.name=}"
-        )
-        return False
+        if session_id == asset.name:
+            logger.debug(
+                f"{asset.id=} name is a session ID alone, with no additional suffixes: it is considered raw data {asset.name=}"
+            )
+            return True
+        else:
+            logger.debug(
+                f"{asset.id=} name is not a session ID alone: it is not considered raw data {asset.name=}"
+            )
+            return False
 
 
 @functools.cache
