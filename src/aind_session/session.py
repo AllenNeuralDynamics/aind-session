@@ -189,6 +189,19 @@ class Session:
         >>> session.raw_data_asset.created
         1702620828
         """
+        # try to get asset ID from external links in DocumentDB
+        if self.docdb["external_links"]:
+            # list of dicts; may be empty; Code Ocean key is data asset ID
+            asset_ids = [link.get("Code Ocean") for link in self.docdb["external_links"]]
+            if len(asset_ids) > 1:
+                logger.warning(
+                    f"Multiple external links found for {self.id} in DocumentDB: using first as raw data asset ID {asset_ids}"
+                )
+            asset_id = asset_ids[0]
+            if len(asset_ids) > 0:
+                logger.debug(f"Using {asset_id=} for {self.id} raw data asset")
+                return aind_session.utils.get_data_asset_model(asset_id)
+        # if no external links are found, try to get asset ID from CodeOcean API
         assets = tuple(
             asset
             for asset in self.data_assets
@@ -309,7 +322,7 @@ class Session:
         >>> docdb.keys()       # doctest: +SKIP
         dict_keys(['_id', 'acquisition', 'created', 'data_description', 'describedBy', 'external_links', 'instrument', 'last_modified', 'location', 'metadata_status', 'name', 'procedures', 'processing', 'rig', 'schema_version', 'session', 'subject'])
         """
-        return aind_session.utils.get_docdb_record(self.id)
+        return aind_session.utils.get_docdb_record(self.id, ttl_hash=aind_session.utils.get_ttl_hash(12 * 3600))
 
 
 def get_sessions(
