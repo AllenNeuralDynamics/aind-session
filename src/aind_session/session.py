@@ -233,7 +233,7 @@ class Session:
         >>> session.raw_data_dir.as_posix()
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40'
         """
-        if (p := self.docdb.get("location")):
+        if p := self.docdb.get("location"):
             return upath.UPath(p)
         if getattr(self, "raw_data_asset", None):
             logger.debug(
@@ -295,11 +295,11 @@ class Session:
                     dir_names.remove(name)
                     logger.debug(f"Excluding {name!r} from modality names")
         return tuple(sorted(dir_names))
-    
+
     @property
     def docdb(self) -> dict[str, Any]:
         """Contents of the session's DocumentDB record.
-        
+
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
