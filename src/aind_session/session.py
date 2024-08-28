@@ -305,7 +305,7 @@ class Session:
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> docdb = session.docdb
         >>> type(docdb)
-        dict
+        <class 'dict'>
         >>> docdb.keys()       # doctest: +SKIP
         dict_keys(['_id', 'acquisition', 'created', 'data_description', 'describedBy', 'external_links', 'instrument', 'last_modified', 'location', 'metadata_status', 'name', 'procedures', 'processing', 'rig', 'schema_version', 'session', 'subject'])
         """
