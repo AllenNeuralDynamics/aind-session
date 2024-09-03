@@ -190,7 +190,7 @@ class Session:
         1702620828
         """
         # try to get asset ID from external links in DocumentDB
-        if self.docdb["external_links"]:
+        if self.docdb.get("external_links"):
             # list of dicts; may be empty; Code Ocean key is data asset ID
             asset_ids = [link.get("Code Ocean") for link in self.docdb["external_links"]]
             if len(asset_ids) > 1:
