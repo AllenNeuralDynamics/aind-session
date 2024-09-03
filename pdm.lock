@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:8917c7dd9f89c382b0f0e6195650515d066fb18e69b08fd8e3eb7338185585cf"
+content_hash = "sha256:4099a0862a7eacd2e2e88c890a88bbb54f668ec2dd767975f43766bd14d7a0cf"
 
 [[metadata.targets]]
 requires_python = ">=3.9,<3.12"
@@ -1192,7 +1192,7 @@ files = [
 
 [[package]]
 name = "npc-io"
-version = "0.1.27"
+version = "0.1.29"
 requires_python = ">=3.9"
 summary = "File IO tools for MindScope Neuropixels projects in the cloud."
 groups = ["default"]
@@ -1205,8 +1205,8 @@ dependencies = [
     "universal-pathlib<0.2.0",
 ]
 files = [
-    {file = "npc_io-0.1.27-py3-none-any.whl", hash = "sha256:70d5ddb141f0a83c5e3744e5c3ca051dd6b4aa87b7c24ddf730415689951bf4e"},
-    {file = "npc_io-0.1.27.tar.gz", hash = "sha256:da6be4bdc899c33e3c206bd7a796980dc476b130350bea3f21cab37dd45d6622"},
+    {file = "npc_io-0.1.29-py3-none-any.whl", hash = "sha256:2f119de10ba3093ab891b5e1bc062a40d7ca885e99ae2cfe9f88a3dd9ead20c4"},
+    {file = "npc_io-0.1.29.tar.gz", hash = "sha256:d0cc19c05f2af18352ac2e7fa0f3387c2d2ca40244f37d8618995ed5ae2c778c"},
 ]
 
 [[package]]

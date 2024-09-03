@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.9, <3.12"
 dependencies = [
     "codeocean>=0.1.5",
-    "npc-io>=0.1.27",
+    "npc-io>=0.1.29",
     "npc-session>=0.1.39",
     "aind-data-access-api[docdb]>=0.14.0",
 ]
