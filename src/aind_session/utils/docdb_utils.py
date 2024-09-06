@@ -95,13 +95,20 @@ def get_docdb_record(
         # retrieve records by ID
         records = get_docdb_api_client().retrieve_docdb_records(
             filter_query={
-                "external_links": {
-                    "$elemMatch": {
-                        "Code Ocean": aind_session.utils.codeocean_utils.get_normalized_uuid(
-                            asset_id
-                        )
+                "$or": [
+                    {
+                        "external_links": {
+                            "$elemMatch": {
+                                "Code Ocean": asset_id # zero or more {"Code Ocean": asset_id} entries (pre-Sep '24)
+                            }
+                        }
+                    },
+                    {
+                        "external_links.Code Ocean": {
+                            "$in": [asset_id]  # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
+                        }
                     }
-                },
+                ]
             },
             sort={"created": 1},
         )

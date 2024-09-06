@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any
+from typing import Any, Mapping
 
 import codeocean.data_asset
 import npc_session
@@ -191,18 +191,23 @@ class Session:
         """
         # try to get asset ID from external links in DocumentDB
         if self.docdb.get("external_links"):
-            # list of dicts; may be empty; Code Ocean key is data asset ID
-            asset_ids = [
-                link.get("Code Ocean") for link in self.docdb["external_links"]
-            ]
-            if len(asset_ids) > 1:
-                logger.info(
-                    f"Multiple external links found for {self.id} in DocumentDB: using first as raw data asset ID {asset_ids}"
-                )
-            asset_id = asset_ids[0]
+            if isinstance(self.docdb["external_links"], Mapping):
+                # dict of str: list[str]
+                asset_ids = self.docdb["external_links"].get("Code Ocean", [])
+            else:
+                # list of dicts; may be empty; Code Ocean key is data asset ID;
+                # may be multiple "Code Ocean" keys with different values
+                asset_ids = [
+                    link.get("Code Ocean") for link in self.docdb["external_links"]
+                ]
             if len(asset_ids) > 0:
-                logger.debug(f"Using {asset_id=} for {self.id} raw data asset")
-                return aind_session.utils.get_data_asset_model(asset_id)
+                if len(asset_ids) > 1:
+                    logger.info(
+                        f"Multiple external links found for {self.id} in DocumentDB: using most-recent as raw data asset ID {asset_ids}"
+                    )
+                asset = aind_session.utils.sort_data_assets(asset_ids)[-1]
+                logger.debug(f"Using {asset.id=} for {self.id} raw data asset")
+                return aind_session.utils.get_data_asset_model(asset)
         # if no external links are found, try to get asset ID from CodeOcean API
         assets = tuple(
             asset
