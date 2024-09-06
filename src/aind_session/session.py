@@ -196,7 +196,7 @@ class Session:
                 link.get("Code Ocean") for link in self.docdb["external_links"]
             ]
             if len(asset_ids) > 1:
-                logger.warning(
+                logger.info(
                     f"Multiple external links found for {self.id} in DocumentDB: using first as raw data asset ID {asset_ids}"
                 )
             asset_id = asset_ids[0]
@@ -214,7 +214,7 @@ class Session:
         elif len(assets) > 1:
             asset = aind_session.utils.sort_data_assets(assets)[-1]
             created = datetime.datetime.fromtimestamp(asset.created).isoformat()
-            logger.warning(
+            logger.info(
                 f"Found {len(assets)} raw data assets for {self.id}: latest asset will be used ({created=})"
             )
         else:
@@ -270,7 +270,7 @@ class Session:
                 f"No raw data asset in CodeOcean and no dir in known data buckets on S3 for {self.id}"
             ) from None
         else:
-            logger.warning(
+            logger.info(
                 f"No raw data asset exists for {self.id}, but uploaded data dir found: {path}"
             )
             return path
@@ -291,7 +291,7 @@ class Session:
         ('behavior', 'behavior_videos', 'ecephys')
         """
         if not self.is_uploaded:
-            logger.warning(
+            logger.info(
                 f"Raw data has not been uploaded for {self.id}: no modalities available yet"
             )
             return ()

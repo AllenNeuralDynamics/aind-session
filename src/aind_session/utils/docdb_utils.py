@@ -107,7 +107,7 @@ def get_docdb_record(
         )
         if len(records) > 0:
             if len(records) > 1:
-                logger.warning(
+                logger.info(
                     f"Multiple records found for {asset_id} in DocumentDB: returning most-recently created"
                 )
                 assert (
@@ -123,7 +123,7 @@ def get_docdb_record(
             try:
                 asset_name = aind_session.get_data_asset_model(asset_id).name
             except Exception:
-                logger.warning(f"{asset_id} does not exist in CodeOcean")
+                logger.info(f"{asset_id} does not exist in CodeOcean")
                 return {}
 
     # retrieve records by name
@@ -135,10 +135,10 @@ def get_docdb_record(
         sort={"created": 1},
     )
     if len(records) == 0:
-        logger.warning(f"No records found for {asset_name!r} in DocumentDB")
+        logger.info(f"No records found for {asset_name!r} in DocumentDB")
         return {}
     if len(records) > 1:
-        logger.warning(
+        logger.info(
             f"Multiple records found for {asset_name!r} in DocumentDB: returning most-recently created"
         )
         assert (

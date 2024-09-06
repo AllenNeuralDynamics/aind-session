@@ -392,7 +392,7 @@ def search_data_assets(
         updated_params = search_params.copy()
     for key in ("limit", "offset"):
         if key in search_params:
-            logger.warning(
+            logger.info(
                 f"Removing {key} from provided search parameters: pagination is handled by this function"
             )
             updated_params.pop(key)

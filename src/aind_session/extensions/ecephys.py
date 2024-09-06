@@ -136,7 +136,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         elif len(self.sorted_data_assets) > 1:
             asset = aind_session.utils.sort_data_assets(self.sorted_data_assets)[-1]
             created = datetime.datetime.fromtimestamp(asset.created).isoformat(sep=" ")
-            logger.warning(
+            logger.info(
                 f"Found {len(self.sorted_data_assets)} sorted data assets for {self._session.id}: most recent asset will be used ({created=})"
             )
         else:
@@ -270,7 +270,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                         logger.debug(f"Found {path.as_posix()}")
                     else:
                         assert existing_path is not None
-                        logger.warning(
+                        logger.info(
                             f"Found multiple {name} dirs: using {existing_path.relative_to(raw_data_dir).as_posix()} over {path.relative_to(raw_data_dir).as_posix()}"
                         )
         assert len(return_paths) == 2
@@ -331,7 +331,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             if parent_dir.exists():
                 break
         else:
-            logger.warning(
+            logger.info(
                 f"No 'curated' or 'sorting_precurated' dir found in {sorted_data_dir.as_posix()}: assuming no probes completed processing"
             )
             return ()
