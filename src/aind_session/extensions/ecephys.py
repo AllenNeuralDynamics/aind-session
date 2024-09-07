@@ -134,7 +134,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         if len(self.sorted_data_assets) == 1:
             asset = self.sorted_data_assets[0]
         elif len(self.sorted_data_assets) > 1:
-            asset = aind_session.utils.sort_data_assets(self.sorted_data_assets)[-1]
+            asset = aind_session.utils.sort_by_created(self.sorted_data_assets)[-1]
             created = datetime.datetime.fromtimestamp(asset.created).isoformat(sep=" ")
             logger.info(
                 f"Found {len(self.sorted_data_assets)} sorted data assets for {self._session.id}: most recent asset will be used ({created=})"
@@ -358,36 +358,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.is_sorting_fail
         False
         """
-        return self.is_sorted_asset_error(self.sorted_data_asset)
-
-    @staticmethod
-    def is_sorted_asset_error(
-        sorted_data_asset_id_or_model: str | codeocean.data_asset.DataAsset,
-    ) -> bool:
-        """
-        Examples
-        --------
-        >>> aind_session.ecephys.is_sorted_asset_error('5116b590-c240-4413-8a0f-1686659d13cc')
-        True
-        >>> aind_session.ecephys.is_sorted_asset_error('03b8a999-d1fb-4a27-b28f-7b880fbdef4b')
-        False
-        """
-
-        asset_id = aind_session.utils.codeocean_utils.get_normalized_uuid(
-            sorted_data_asset_id_or_model
-        )
-        output = (
-            aind_session.utils.codeocean_utils.get_data_asset_source_dir(asset_id)
-            / "output"
-        )
-        if not output.exists():
-            logger.debug(
-                f"No output file found for {asset_id} in source dir: considered a capusle/pipeline error"
-            )
-            return True
-        return aind_session.utils.codeocean_utils.is_output_file_error(
-            output.read_text()
-        )
+        return aind_session.utils.codeocean_utils.is_asset_error(self.sorted_data_asset)
 
     def run_sorting(
         self,

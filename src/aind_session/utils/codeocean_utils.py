@@ -592,6 +592,100 @@ def get_session_data_assets(
     return assets
 
 
+def get_output_text(
+    asset_or_computation_id: (
+        str
+        | uuid.UUID
+        | codeocean.data_asset.DataAsset
+        | codeocean.computation.Computation
+    ),
+) -> str:
+    """Get the contents of the "output" file from a data asset or computation.
+
+    - raises `FileNotFoundError` if the output file is not found
+    - getting the path itself is complicated for computations, so we just return
+      the text
+
+    Examples
+    --------
+    Get the output file for a data asset:
+    >>> text = get_output_text('153419c7-09c4-43ce-9776-45bd63c50f72')
+    """
+    model = get_model(asset_or_computation_id)
+    if isinstance(asset_or_computation_id, codeocean.computation.Computation):
+        computation = model
+        if not computation.has_results:
+            raise FileNotFoundError(
+                f"Computation {computation.id} has no results: cannot fetch output file"
+            )
+        output_file = next(
+            (
+                item
+                for item in get_codeocean_client()
+                .computations.list_computation_results(computation_id=computation.id)
+                .items
+                if item.name == "output"
+            ),
+            None,
+        )
+        if output_file is None:
+            raise FileNotFoundError(
+                f"Output file not found for computation {computation.id}"
+            )
+        return requests.get(
+            get_codeocean_client()
+            .computations.get_result_file_download_url(computation.id, "output")
+            .url
+        ).text
+    else:
+        asset = get_data_asset_model(asset_or_computation_id)
+        return (get_data_asset_source_dir(asset.id) / "output").read_text()
+
+
+def is_asset_error(
+    asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
+) -> bool:
+    """Make a best-effort determination of whether a data asset is created from a
+    computation that errored, based on the contents of the output file.
+
+    - if no output file is found, returns True
+    - if the asset is from the spike-sorting pipeline and the results do not contain an
+      NWB, returns True
+    - checks whether the output file contains certain text:
+        - "Essential container in task exited",
+        - "Out of memory.",
+        - "Task failed to start - DockerTimeoutError",
+        - "The CUDA error was:",
+        - "Traceback (most recent call last):",
+        - "Command error:",
+        - "WARN: Killing running tasks",
+    
+    Examples
+    --------
+    
+    >>> aind_session.is_asset_error('9eb51aaf-9b45-4bd9-8b43-85d7c2781ac7')
+    True
+    >>> aind_session.is_asset_error('153419c7-09c4-43ce-9776-45bd63c50f72')
+    False
+    """
+    asset = get_data_asset_model(asset_id_or_model)
+    try:
+        output = get_output_text(asset)
+    except FileNotFoundError:
+        return True
+    if is_output_file_error(output):
+        return True
+    source_dir = get_data_asset_source_dir(asset.id)
+    if (
+        is_output_file_from_sorting_pipeline(output)
+        and next((source_dir / "nwb").glob("*.nwb*"), None) is None
+        ):
+        logger.debug(
+            f"{asset.name} {asset.id} considered errored: results do not contain NWB file"
+        )
+        return True
+    return False
+
 def is_computation_error(
     computation_id_or_model: codeocean.computation.Computation,
 ) -> bool:
@@ -666,20 +760,13 @@ def is_computation_error(
         )
         return True
 
-    if "output" in result_item_names:
-        output: str = (
-            requests.get(
-                get_codeocean_client()
-                .computations.get_result_file_download_url(computation.id, "output")
-                .url
-            )
-        ).text
+    try:
+        output = get_output_text(computation)
+    except FileNotFoundError:
+        output = None
+    if output:
         if is_output_file_error(output):
-            logger.debug(
-                f"{desc(computation)} considered errored: output file contains error"
-            )
             return True
-
         if (
             is_output_file_from_sorting_pipeline(output)
             and "nwb" not in result_item_names
@@ -704,9 +791,9 @@ def is_output_file_error(output: str) -> bool:
 
     Examples
     --------
-    >>> aind_session.ecephys.is_sorted_asset_error('5116b590-c240-4413-8a0f-1686659d13cc') # DockerTimeoutError
+    >>> aind_session.is_output_file_error('5116b590-c240-4413-8a0f-1686659d13cc') # DockerTimeoutError
     True
-    >>> aind_session.ecephys.is_sorted_asset_error('03b8a999-d1fb-4a27-b28f-7b880fbdef4b')
+    >>> aind_session.is_output_file_error('03b8a999-d1fb-4a27-b28f-7b880fbdef4b')
     False
     """
     for error_text in (
