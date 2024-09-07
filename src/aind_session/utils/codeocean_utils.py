@@ -9,7 +9,7 @@ import os
 import time
 import uuid
 from collections.abc import Iterable
-from typing import Any
+from typing import Any, Literal
 
 import codeocean
 import codeocean.components
@@ -95,7 +95,7 @@ def sort_by_created(
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
     """Sort data assets or computations by ascending creation date. Accepts IDs or models."""
     return tuple(
-        sorted((get_model(a) for a in ids_or_models), key=lambda asset: asset.created)
+        sorted((get_codeocean_model(a) for a in ids_or_models), key=lambda asset: asset.created)
     )
 
 
@@ -116,10 +116,56 @@ def get_data_asset_model(
     """
     if isinstance(asset_id_or_model, codeocean.data_asset.DataAsset):
         return asset_id_or_model
-    return get_codeocean_client().data_assets.get_data_asset(
-        get_normalized_uuid(asset_id_or_model)
-    )
 
+def get_codeocean_model(
+    asset_or_computation_id: (
+        str
+        | uuid.UUID
+        | codeocean.data_asset.DataAsset
+        | codeocean.computation.Computation
+    ),
+    is_computation: Literal[True] | None = None,
+) -> codeocean.data_asset.DataAsset | codeocean.computation.Computation:
+    """Fetches data asset or computation metadata model from an ID.
+
+    - use to ensure we have a `DataAsset` or `Computation` object
+    - if model is already a `DataAsset` or `Computation`, it is returned as-is
+    - if a str/uuid is supplied, a matching data asset will first be looked-up, and
+      then a computation if no data asset is found
+        - if `is_computation` is set to True, the initial data asset lookup will
+          be skipped
+
+    Examples
+    --------
+    >>> asset = get_codeocean_model('83636983-f80d-42d6-a075-09b60c6abd5e')
+    >>> assert isinstance(asset, codeocean.data_asset.DataAsset)
+    >>> asset = get_codeocean_model('7646f92f-d225-464c-b7aa-87a87f34f408')
+    >>> assert isinstance(asset, codeocean.computation.Computation)
+    
+    If no data asset or computation is found, a ValueError is raised:
+    >>> asset = get_codeocean_model('867ed56f-f9cc-4649-8b9f-97efc4dbd4ca')
+    Traceback (most recent call last):
+    ...
+    ValueError: No data asset or computation found matching ID 867ed56f-f9cc-4649-8b9f-97efc4dbd4ca
+    """
+    if isinstance(
+        asset_or_computation_id, codeocean.data_asset.DataAsset
+    ) or isinstance(asset_or_computation_id, codeocean.computation.Computation):
+        return asset_or_computation_id
+    if not is_computation:
+        with contextlib.suppress(ValueError):
+            return get_data_asset_model(asset_or_computation_id)
+    try:
+        return get_codeocean_client().computations.get_computation(
+            get_normalized_uuid(asset_or_computation_id)
+        )
+    except requests.HTTPError as exc:
+        if exc.response.status_code == 404:
+            raise ValueError(
+                f"No data asset or computation found matching ID {asset_or_computation_id}"
+            ) from None
+        else:
+            raise
 
 def get_normalized_uuid(
     id_or_model: (
@@ -617,7 +663,7 @@ def get_output_text(
     Get the output file for a data asset:
     >>> text = get_output_text('153419c7-09c4-43ce-9776-45bd63c50f72')
     """
-    model = get_model(asset_or_computation_id)
+    model = get_codeocean_model(asset_or_computation_id)
     if isinstance(asset_or_computation_id, codeocean.computation.Computation):
         computation = model
         if not computation.has_results:
@@ -719,12 +765,7 @@ def is_computation_error(
     >>> aind_session.is_computation_error("7646f92f-d225-464c-b7aa-87a87f34f408")
     True
     """
-    if not isinstance(computation_id_or_model, codeocean.computation.Computation):
-        computation = get_codeocean_client().computations.get_computation(
-            get_normalized_uuid(computation_id_or_model)
-        )
-    else:
-        computation = computation_id_or_model
+    computation = get_codeocean_model(computation_id_or_model, is_computation=True)
 
     def desc(computation: codeocean.computation.Computation) -> str:
         return f"Computation {computation.id} ({computation.name})"
