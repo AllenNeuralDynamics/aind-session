@@ -205,7 +205,7 @@ class Session:
                     logger.info(
                         f"Multiple external links found for {self.id} in DocumentDB: using most-recent as raw data asset ID {asset_ids}"
                     )
-                asset = aind_session.utils.sort_data_assets(asset_ids)[-1]
+                asset = aind_session.utils.sort_by_created(asset_ids)[-1]
                 logger.debug(f"Using {asset.id=} for {self.id} raw data asset")
                 return aind_session.utils.get_data_asset_model(asset)
         # if no external links are found, try to get asset ID from CodeOcean API
@@ -217,7 +217,7 @@ class Session:
         if len(assets) == 1:
             asset = assets[0]
         elif len(assets) > 1:
-            asset = aind_session.utils.sort_data_assets(assets)[-1]
+            asset = aind_session.utils.sort_by_created(assets)[-1]
             created = datetime.datetime.fromtimestamp(asset.created).isoformat()
             logger.info(
                 f"Found {len(assets)} raw data assets for {self.id}: latest asset will be used ({created=})"

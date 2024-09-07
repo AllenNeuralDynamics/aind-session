@@ -85,12 +85,18 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
     return client
 
 
-def sort_data_assets(
-    assets_or_ids: Iterable[str |  uuid.UUID | codeocean.data_asset.DataAsset],
+def sort_by_created(
+    ids_or_models: Iterable[
+        str
+        | uuid.UUID
+        | codeocean.data_asset.DataAsset
+        | codeocean.computation.Computation
+    ],
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
-    """Sort data assets by ascending creation date. Accepts asset IDs or models.
-    """
-    return tuple(sorted((get_data_asset_model(a) for a in assets_or_ids), key=lambda asset: asset.created))
+    """Sort data assets or computations by ascending creation date. Accepts IDs or models."""
+    return tuple(
+        sorted((get_model(a) for a in ids_or_models), key=lambda asset: asset.created)
+    )
 
 
 def get_data_asset_model(
