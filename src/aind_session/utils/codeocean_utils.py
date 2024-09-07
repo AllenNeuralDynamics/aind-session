@@ -755,7 +755,7 @@ def is_asset_error(
         output = get_output_text(asset)
     except FileNotFoundError:
         return True
-    if is_output_file_error(output):
+    if is_output_error(output):
         return True
     source_dir = get_data_asset_source_dir(asset.id)
     if (
@@ -845,7 +845,7 @@ def is_computation_error(
     except FileNotFoundError:
         output = None
     if output:
-        if is_output_file_error(output):
+        if is_output_error(output):
             return True
         if (
             is_output_file_from_sorting_pipeline(output)
@@ -865,15 +865,15 @@ def is_output_file_from_sorting_pipeline(output: str) -> bool:
     )
 
 
-def is_output_file_error(output: str) -> bool:
+def is_output_error(output_text: str) -> bool:
     """Check if an output file contains text that indicates an error occurred
     during capsule/pipeline run.
 
     Examples
     --------
-    >>> aind_session.is_output_file_error('5116b590-c240-4413-8a0f-1686659d13cc') # DockerTimeoutError
+    >>> aind_session.is_output_error(aind_session.get_output_text('5116b590-c240-4413-8a0f-1686659d13cc')) # DockerTimeoutError
     True
-    >>> aind_session.is_output_file_error('03b8a999-d1fb-4a27-b28f-7b880fbdef4b')
+    >>> aind_session.is_output_error(aind_session.get_output_text('03b8a999-d1fb-4a27-b28f-7b880fbdef4b'))
     False
     """
     for error_text in (
@@ -885,8 +885,8 @@ def is_output_file_error(output: str) -> bool:
         "Command error:",
         "WARN: Killing running tasks",
     ):
-        if error_text in output:
-            if "CUDA" in error_text and is_output_file_from_sorting_pipeline(output):
+        if error_text in output_text:
+            if "CUDA" in error_text and is_output_file_from_sorting_pipeline(output_text):
                 logger.warning(
                     "output file has at least one CUDA error message, but some probes may still be usable"
                 )
