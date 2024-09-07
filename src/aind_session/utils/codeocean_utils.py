@@ -50,7 +50,7 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
     )
     if token is None:
         raise KeyError(
-            "`CODE_OCEAN_API_TOKEN` not found in environment variables and no `COP_` variable found",
+            "`CODE_OCEAN_API_TOKEN` not found in environment variables and no `COP_` variable found"
         )
     client = codeocean.CodeOcean(
         domain=os.getenv(
