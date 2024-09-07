@@ -785,12 +785,15 @@ def is_computation_error(
           errored (we assume there aren't false-negatives)
 
     If `end_status` is "succeeded", then the output folder is checked for indications of error:
-    - no files (or only `nextflow` and `output` files for pipeline runs)
-    - the `output` file contains certain text:
-        - "Out of memory."
-        - a Python traceback
-        - a CUDA error message
-        - "Task failed to start - DockerTimeoutError"
+    - no files (or only nextflow and output files for pipeline runs)
+    - the output file contains certain text:
+        - "Essential container in task exited",
+        - "Out of memory.",
+        - "Task failed to start - DockerTimeoutError",
+        - "The CUDA error was:",
+        - "Traceback (most recent call last):",
+        - "Command error:",
+        - "WARN: Killing running tasks",
 
     >>> aind_session.is_computation_error("7646f92f-d225-464c-b7aa-87a87f34f408")
     True
