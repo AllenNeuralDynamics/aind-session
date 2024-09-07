@@ -74,10 +74,13 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
                     favorite=False,
                 )
             )
-        except OSError:  # requests.exceptions subclass IOError/OSError
-            raise ValueError(
-                "CodeOcean API token was found in environment variables, but does not have permissions to read datasets: check `CODE_OCEAN_API_TOKEN`"
-            ) from None
+        except requests.HTTPError as exc:
+            if exc.response.status_code == 401:
+                raise ValueError(
+                    "CodeOcean API token was found in environment variables, but does not have permissions to read datasets: check `CODE_OCEAN_API_TOKEN`"
+                ) from None
+            else:
+                raise
         else:
             logger.debug(
                 f"CodeOcean credentials verified as having read datasets scope, in {time.time() - t0:.2f}s"
@@ -116,6 +119,17 @@ def get_data_asset_model(
     """
     if isinstance(asset_id_or_model, codeocean.data_asset.DataAsset):
         return asset_id_or_model
+    try:
+        return get_codeocean_client().data_assets.get_data_asset(
+            get_normalized_uuid(asset_id_or_model)
+        )
+    except requests.HTTPError as exc:
+        if exc.response.status_code == 404:
+            raise ValueError(
+                f"No data asset found matching ID {asset_id_or_model}"
+            )
+        else:
+            raise
 
 def get_codeocean_model(
     asset_or_computation_id: (
@@ -187,11 +201,27 @@ def get_normalized_uuid(
     >>> assert a == b == c
     >>> a
     '867ed56f-f9cc-4649-8b9f-97efc4dbd4cd'
+    
+    Badly-formed UUIDs will raise a ValueError:
+    >>> get_normalized_uuid('867ed56f')
+    Traceback (most recent call last):
+    ...
+    ValueError: Cannot create a valid UUID from '867ed56f'
+    
+    Incorrect types will raise a TypeError:
+    >>> get_normalized_uuid(867)
+    Traceback (most recent call last):
+    ...
+    TypeError: Cannot convert 867 (<class 'int'>) to a UUID
     """
     if (id_ := getattr(id_or_model, "id", None)) is not None:
         return id_
-    return str(uuid.UUID(str(id_or_model)))
-
+    try:
+        return str(uuid.UUID(id_or_model)) # type: ignore [arg-type]
+    except ValueError:
+        raise ValueError(f"Cannot create a valid UUID from {id_or_model!r}") from None
+    except AttributeError:
+        raise TypeError(f"Cannot convert {id_or_model!r} ({type(id_or_model)}) to a UUID") from None
 
 def is_raw_data_asset(
     asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
