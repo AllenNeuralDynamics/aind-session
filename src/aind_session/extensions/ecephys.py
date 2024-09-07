@@ -110,7 +110,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         """
         if not self.sorted_data_assets:
             return False
-        if self.is_sorted_asset_error(self.sorted_data_asset):
+        if self.is_sorting_fail:
             return False
         return True
 
