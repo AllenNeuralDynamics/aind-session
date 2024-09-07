@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import datetime
 import logging
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 import codeocean.data_asset
 import npc_session

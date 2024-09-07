@@ -98,7 +98,10 @@ def sort_by_created(
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
     """Sort data assets or computations by ascending creation date. Accepts IDs or models."""
     return tuple(
-        sorted((get_codeocean_model(a) for a in ids_or_models), key=lambda asset: asset.created)
+        sorted(
+            (get_codeocean_model(a) for a in ids_or_models),
+            key=lambda asset: asset.created,
+        )
     )
 
 
@@ -125,11 +128,10 @@ def get_data_asset_model(
         )
     except requests.HTTPError as exc:
         if exc.response.status_code == 404:
-            raise ValueError(
-                f"No data asset found matching ID {asset_id_or_model}"
-            )
+            raise ValueError(f"No data asset found matching ID {asset_id_or_model}")
         else:
             raise
+
 
 def get_codeocean_model(
     asset_or_computation_id: (
@@ -155,7 +157,7 @@ def get_codeocean_model(
     >>> assert isinstance(asset, codeocean.data_asset.DataAsset)
     >>> asset = get_codeocean_model('7646f92f-d225-464c-b7aa-87a87f34f408')
     >>> assert isinstance(asset, codeocean.computation.Computation)
-    
+
     If no data asset or computation is found, a ValueError is raised:
     >>> asset = get_codeocean_model('867ed56f-f9cc-4649-8b9f-97efc4dbd4ca')
     Traceback (most recent call last):
@@ -181,6 +183,7 @@ def get_codeocean_model(
         else:
             raise
 
+
 def get_normalized_uuid(
     id_or_model: (
         str
@@ -201,13 +204,13 @@ def get_normalized_uuid(
     >>> assert a == b == c
     >>> a
     '867ed56f-f9cc-4649-8b9f-97efc4dbd4cd'
-    
+
     Badly-formed UUIDs will raise a ValueError:
     >>> get_normalized_uuid('867ed56f')
     Traceback (most recent call last):
     ...
     ValueError: Cannot create a valid UUID from '867ed56f'
-    
+
     Incorrect types will raise a TypeError:
     >>> get_normalized_uuid(867)
     Traceback (most recent call last):
@@ -217,11 +220,14 @@ def get_normalized_uuid(
     if (id_ := getattr(id_or_model, "id", None)) is not None:
         return id_
     try:
-        return str(uuid.UUID(id_or_model)) # type: ignore [arg-type]
+        return str(uuid.UUID(id_or_model))  # type: ignore [arg-type]
     except ValueError:
         raise ValueError(f"Cannot create a valid UUID from {id_or_model!r}") from None
     except AttributeError:
-        raise TypeError(f"Cannot convert {id_or_model!r} ({type(id_or_model)}) to a UUID") from None
+        raise TypeError(
+            f"Cannot convert {id_or_model!r} ({type(id_or_model)}) to a UUID"
+        ) from None
+
 
 def is_raw_data_asset(
     asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
@@ -741,10 +747,10 @@ def is_asset_error(
         - "Traceback (most recent call last):",
         - "Command error:",
         - "WARN: Killing running tasks",
-    
+
     Examples
     --------
-    
+
     >>> aind_session.is_asset_error('9eb51aaf-9b45-4bd9-8b43-85d7c2781ac7')
     True
     >>> aind_session.is_asset_error('153419c7-09c4-43ce-9776-45bd63c50f72')
@@ -761,12 +767,13 @@ def is_asset_error(
     if (
         is_output_file_from_sorting_pipeline(output)
         and next((source_dir / "nwb").glob("*.nwb*"), None) is None
-        ):
+    ):
         logger.debug(
             f"{asset.name} {asset.id} considered errored: results do not contain NWB file"
         )
         return True
     return False
+
 
 def is_computation_error(
     computation_id_or_model: codeocean.computation.Computation,
@@ -886,7 +893,9 @@ def is_output_error(output_text: str) -> bool:
         "WARN: Killing running tasks",
     ):
         if error_text in output_text:
-            if "CUDA" in error_text and is_output_file_from_sorting_pipeline(output_text):
+            if "CUDA" in error_text and is_output_file_from_sorting_pipeline(
+                output_text
+            ):
                 logger.warning(
                     "output file has at least one CUDA error message, but some probes may still be usable"
                 )

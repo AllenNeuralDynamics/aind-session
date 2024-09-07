@@ -99,15 +99,17 @@ def get_docdb_record(
                     {
                         "external_links": {
                             "$elemMatch": {
-                                "Code Ocean": asset_id # zero or more {"Code Ocean": asset_id} entries (pre-Sep '24)
+                                "Code Ocean": asset_id  # zero or more {"Code Ocean": asset_id} entries (pre-Sep '24)
                             }
                         }
                     },
                     {
                         "external_links.Code Ocean": {
-                            "$in": [asset_id]  # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
+                            "$in": [
+                                asset_id
+                            ]  # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
                         }
-                    }
+                    },
                 ]
             },
             sort={"created": 1},
