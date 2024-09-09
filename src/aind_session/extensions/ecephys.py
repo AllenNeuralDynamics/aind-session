@@ -368,7 +368,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         trigger_capsule_id: str = "eb5a26e4-a391-4d79-9da5-1ab65b71253f",
         override_parameters: list[str] | None = None,
         skip_already_sorting: bool = True,
-    ) -> codeocean.computation.Computation:
+    ) -> codeocean.computation.Computation | None:
         """Run the sorting trigger capsule with the session's raw data asset
         (assumed to be only one). Launches the sorting pipeline then creates a new
         sorted data asset.
@@ -380,6 +380,9 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
           currently awkward: will update to pass named parameter kwargs in the
           future
             - if needed, you can override the parameters used with a custom list
+        - if `skip_already_sorting` is `True`, a new pipeline run will not
+          triggered the session's raw data asset is already being sorted (returns
+          None) 
 
         Examples
         --------
@@ -419,7 +422,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
                 logger.warning(
                     f"Sorting is already running for {asset.id}: {[c.name for c in current_computations]}. Use `skip_already_sorting=False` to force a new pipeline run"
                 )
-                return
+                return None
         logger.debug(f"Triggering sorting pipeline with {parameters=}")
         computation = aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
             codeocean.computation.RunParams(
