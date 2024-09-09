@@ -5,7 +5,7 @@ authors = [
     { name = "Ben Hardcastle", email = "ben.hardcastle@alleninstitue.org" },
 ]
 readme = "README.md"
-requires-python = ">=3.9, <3.12"
+requires-python = ">=3.9"
 dependencies = [
     "codeocean>=0.1.5",
     "npc-io>=0.1.29",
