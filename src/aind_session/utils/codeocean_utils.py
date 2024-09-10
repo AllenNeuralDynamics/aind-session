@@ -524,7 +524,7 @@ def search_data_assets(
 def search_computations(
     capsule_or_pipeline_id: str | uuid.UUID,
     name: str | None = None,
-    data_asset_id: str | None = None,
+    attached_data_asset_id: str | None = None,
     in_progress: bool | None = None,
     computation_state: codeocean.computation.ComputationState | None = None,
     ttl_hash: int | None = None,
@@ -540,8 +540,8 @@ def search_computations(
     - sorted by ascending creation time
     - `in_progress` True/False can be used to filter on whether the computation
       has ended
-    - `data_asset_id` can be used to filter on whether the computation was run
-      with the data asset attached
+    - `attached_data_asset_id` can be used to filter on whether the computation was run
+      with the given data asset attached as an input
     - by default, this function caches the result indefinitely: supply with a
       `aind_session.utils.ttl_hash(sec)` to cache for a given number of seconds
 
@@ -578,12 +578,12 @@ def search_computations(
     )
     if name is not None:
         records = [record for record in records if record["name"] == name]
-    if data_asset_id is not None:
+    if attached_data_asset_id is not None:
         records = [
             record
             for record in records
             if any(
-                input_data_asset["id"] == data_asset_id
+                input_data_asset["id"] == attached_data_asset_id
                 for input_data_asset in record.get("data_assets", [])
             )
         ]
