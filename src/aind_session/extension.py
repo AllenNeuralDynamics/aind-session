@@ -26,8 +26,36 @@ def register_namespace(name: str) -> Callable[[type[NS]], type[NS]]:
 
 
 class ExtensionBaseClass:
-    """A baseclass with init and repr. Subclass to add modalities etc. to the
-    Session class, and use the `register_namespace` decorator."""
+    """A baseclass with init and repr. Subclass to add a new namespace to the
+    Session class which applies to all new instances of the Session class.
+    
+    Examples
+    --------
+    Create a custom namespace by subclassing ExtensionBaseClass and registering it with the Session class:
+    >>> @aind_session.register_namespace("my_extension")
+    ... class MyExtension(aind_session.ExtensionBaseClass):
+    ...
+    ...    constant = 42
+    ...
+    ...    @classmethod
+    ...    def add(cls, value) -> int:
+    ...        return cls.constant + value
+    ...
+    ...    # Access the underlying session object with self._session
+    ...    @property
+    ...    def oldest_data_asset_id(self) -> str:
+    ...        return min(self._session.data_assets, key=lambda x: x.created).id
+    ...
+
+    Create a session object and access the custom namespace:
+    >>> session = aind_session.Session("ecephys_676909_2023-12-13_13-43-40")
+    >>> session.my_extension.constant
+    42
+    >>> session.my_extension.add(10)
+    52
+    >>> session.my_extension.oldest_data_asset_id
+    '16d46411-540a-4122-b47f-8cb2a15d593a'
+    """
 
     def __init__(self, session: aind_session.session.Session) -> None:
         self._session = session
@@ -36,7 +64,7 @@ class ExtensionBaseClass:
         return f"{self.__class__.__name__}({self._session})"
 
 
-class NameSpace:
+class _NameSpace:
     """Establish property-like namespace object for user-defined functionality.
 
     From https://docs.pola.rs/api/python/stable/reference/api.html
@@ -71,7 +99,12 @@ def _create_namespace(
                 f"Overriding existing custom namespace {name!r} (on {cls.__name__!r})",
             )
 
-        setattr(cls, name, NameSpace(name, ns_class))
+        setattr(cls, name, _NameSpace(name, ns_class))
         return ns_class
 
     return namespace
+
+if __name__ == "__main__":
+    from aind_session import testmod
+
+    testmod()
