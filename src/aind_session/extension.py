@@ -28,7 +28,7 @@ def register_namespace(name: str) -> Callable[[type[NS]], type[NS]]:
 class ExtensionBaseClass:
     """A baseclass with init and repr. Subclass to add a new namespace to the
     Session class which applies to all new instances of the Session class.
-    
+
     Examples
     --------
     Create a custom namespace by subclassing ExtensionBaseClass and registering it with the Session class:
@@ -103,6 +103,7 @@ def _create_namespace(
         return ns_class
 
     return namespace
+
 
 if __name__ == "__main__":
     from aind_session import testmod

@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     import aind_session.extensions.ecephys
 
+
 class Session:
     """
     Session object for Allen Institute for Neural Dynamics sessions (all platforms).
@@ -73,8 +74,8 @@ class Session:
 
     # optional annotations for extensions here to enable IDE type checking,
     # autocompletion, etc.
-    ecephys: aind_session.extensions.ecephys.Ecephys # type: ignore [name-defined]
-    
+    ecephys: aind_session.extensions.ecephys.Ecephys  # type: ignore [name-defined]
+
     def __init__(self, session_id: str) -> None:
         """
         Initialize a session object from a session ID, or a string containing one.

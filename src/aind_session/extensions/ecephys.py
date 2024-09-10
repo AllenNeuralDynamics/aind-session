@@ -381,7 +381,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             - if needed, you can override the parameters used with a custom list
         - if `skip_already_sorting` is `True`, a new pipeline run will not
           triggered the session's raw data asset is already being sorted (returns
-          None) 
+          None)
 
         Examples
         --------
