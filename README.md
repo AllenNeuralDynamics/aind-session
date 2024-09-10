@@ -72,10 +72,10 @@ True
 ('behavior', 'behavior_videos', 'ecephys')
 >>> session.docdb.keys()
 dict_keys(['_id', 'acquisition', 'created', 'data_description', 'describedBy', 'external_links', 'instrument', 'last_modified', 'location', 'metadata_status', 'name', 'procedures', 'processing', 'rig', 'schema_version', 'session', 'subject'])
+>>> session.docdb['subject']['genotype']
+'Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt'
 
 # Additional functionality in namespace extensions:
->>> session.metadata.subject['genotype']
-'Pvalb-IRES-Cre/wt;Ai32(RCL-ChR2(H134R)_EYFP)/wt'
 >>> session.ecephys.is_sorted
 True
 >>> session.ecephys.sorted_data_asset.name
