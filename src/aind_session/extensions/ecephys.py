@@ -10,7 +10,6 @@ import npc_session
 import upath
 
 import aind_session.extension
-import aind_session.session
 import aind_session.utils.codeocean_utils
 
 logger = logging.getLogger(__name__)
