@@ -13,10 +13,10 @@ logger = logging.getLogger(__name__)
 
 _reserved_namespaces: set[str] = set()
 
-NS = TypeVar("NS")
+_NS = TypeVar("NS")
 
 
-def register_namespace(name: str) -> Callable[[type[NS]], type[NS]]:
+def register_namespace(name: str) -> Callable[[type[_NS]], type[_NS]]:
     """
     Decorator for registering custom functionality with a Session object.
 
@@ -70,11 +70,11 @@ class _NameSpace:
     From https://docs.pola.rs/api/python/stable/reference/api.html
     """
 
-    def __init__(self, name: str, namespace: type[NS]) -> None:
+    def __init__(self, name: str, namespace: type[_NS]) -> None:
         self._accessor = name
         self._ns = namespace
 
-    def __get__(self, instance: NS | None, cls: type[NS]) -> NS | type[NS]:
+    def __get__(self, instance: _NS | None, cls: type[_NS]) -> _NS | type[_NS]:
         if instance is None:
             return self._ns  # type: ignore[return-value]
 
@@ -85,13 +85,13 @@ class _NameSpace:
 
 def _create_namespace(
     name: str, cls: type[aind_session.session.Session]
-) -> Callable[[type[NS]], type[NS]]:
+) -> Callable[[type[_NS]], type[_NS]]:
     """Register custom namespace against the underlying class.
 
     Copied from https://github.com/pola-rs/polars/blob/d0475d7b6502cdc80317dc8795200c615d151a35/py-polars/polars/api.py#L48
     """
 
-    def namespace(ns_class: type[NS]) -> type[NS]:
+    def namespace(ns_class: type[_NS]) -> type[_NS]:
         if name in _reserved_namespaces:
             raise AttributeError(f"cannot override reserved namespace {name!r}")
         elif hasattr(cls, name):
