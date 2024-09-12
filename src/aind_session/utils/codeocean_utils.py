@@ -88,49 +88,49 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
     return client
 
 
-def sort_by_created(
-    ids_or_models: Iterable[
+def get_normalized_uuid(
+    id_or_model: (
         str
         | uuid.UUID
         | codeocean.data_asset.DataAsset
         | codeocean.computation.Computation
-    ],
-) -> tuple[codeocean.data_asset.DataAsset, ...]:
-    """Sort data assets or computations by ascending creation date. Accepts IDs or models."""
-    return tuple(
-        sorted(
-            (get_codeocean_model(a) for a in ids_or_models),
-            key=lambda asset: asset.created,
-        )
-    )
-
-
-def get_data_asset_model(
-    asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
-) -> codeocean.data_asset.DataAsset:
-    """Fetches data asset metadata model from an ID.
-
-    - use to ensure we have a `DataAsset` object
-    - if model is already a `DataAsset`, it is returned as-is
+    ),
+) -> str:
+    """
+    Accepts a data or computation ID or model and returns a string with the format expected
+    by the CodeOcean API.
 
     Examples
     --------
-    >>> asset = get_data_asset_model('83636983-f80d-42d6-a075-09b60c6abd5e')
-    >>> assert isinstance(asset, codeocean.data_asset.DataAsset)
-    >>> asset.name
-    'ecephys_668759_2023-07-11_13-07-32'
+    >>> a = get_normalized_uuid('867ed56f-f9cc-4649-8b9f-97efc4dbd4cd')
+    >>> b = get_normalized_uuid('867ed56ff9cc46498b9f97efc4dbd4cd')
+    >>> c = get_normalized_uuid(get_subject_data_assets(668759)[0])
+    >>> assert a == b == c
+    >>> a
+    '867ed56f-f9cc-4649-8b9f-97efc4dbd4cd'
+
+    Badly-formed UUIDs will raise a ValueError:
+    >>> get_normalized_uuid('867ed56f')
+    Traceback (most recent call last):
+    ...
+    ValueError: Cannot create a valid UUID from '867ed56f'
+
+    Incorrect types will raise a TypeError:
+    >>> get_normalized_uuid(867)
+    Traceback (most recent call last):
+    ...
+    TypeError: Cannot convert 867 (<class 'int'>) to a UUID
     """
-    if isinstance(asset_id_or_model, codeocean.data_asset.DataAsset):
-        return asset_id_or_model
+    if (id_ := getattr(id_or_model, "id", None)) is not None:
+        return id_
     try:
-        return get_codeocean_client().data_assets.get_data_asset(
-            get_normalized_uuid(asset_id_or_model)
-        )
-    except requests.HTTPError as exc:
-        if exc.response.status_code == 404:
-            raise ValueError(f"No data asset found matching ID {asset_id_or_model}")
-        else:
-            raise
+        return str(uuid.UUID(id_or_model))  # type: ignore [arg-type]
+    except ValueError:
+        raise ValueError(f"Cannot create a valid UUID from {id_or_model!r}") from None
+    except AttributeError:
+        raise TypeError(
+            f"Cannot convert {id_or_model!r} ({type(id_or_model)}) to a UUID"
+        ) from None
 
 
 def get_codeocean_model(
@@ -184,107 +184,49 @@ def get_codeocean_model(
             raise
 
 
-def get_normalized_uuid(
-    id_or_model: (
+def get_data_asset_model(
+    asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
+) -> codeocean.data_asset.DataAsset:
+    """Fetches data asset metadata model from an ID.
+
+    - use to ensure we have a `DataAsset` object
+    - if model is already a `DataAsset`, it is returned as-is
+
+    Examples
+    --------
+    >>> asset = get_data_asset_model('83636983-f80d-42d6-a075-09b60c6abd5e')
+    >>> assert isinstance(asset, codeocean.data_asset.DataAsset)
+    >>> asset.name
+    'ecephys_668759_2023-07-11_13-07-32'
+    """
+    if isinstance(asset_id_or_model, codeocean.data_asset.DataAsset):
+        return asset_id_or_model
+    try:
+        return get_codeocean_client().data_assets.get_data_asset(
+            get_normalized_uuid(asset_id_or_model)
+        )
+    except requests.HTTPError as exc:
+        if exc.response.status_code == 404:
+            raise ValueError(f"No data asset found matching ID {asset_id_or_model}")
+        else:
+            raise
+
+
+def sort_by_created(
+    ids_or_models: Iterable[
         str
         | uuid.UUID
         | codeocean.data_asset.DataAsset
         | codeocean.computation.Computation
-    ),
-) -> str:
-    """
-    Accepts a data or computation ID or model and returns a string with the format expected
-    by the CodeOcean API.
-
-    Examples
-    --------
-    >>> a = get_normalized_uuid('867ed56f-f9cc-4649-8b9f-97efc4dbd4cd')
-    >>> b = get_normalized_uuid('867ed56ff9cc46498b9f97efc4dbd4cd')
-    >>> c = get_normalized_uuid(get_subject_data_assets(668759)[0])
-    >>> assert a == b == c
-    >>> a
-    '867ed56f-f9cc-4649-8b9f-97efc4dbd4cd'
-
-    Badly-formed UUIDs will raise a ValueError:
-    >>> get_normalized_uuid('867ed56f')
-    Traceback (most recent call last):
-    ...
-    ValueError: Cannot create a valid UUID from '867ed56f'
-
-    Incorrect types will raise a TypeError:
-    >>> get_normalized_uuid(867)
-    Traceback (most recent call last):
-    ...
-    TypeError: Cannot convert 867 (<class 'int'>) to a UUID
-    """
-    if (id_ := getattr(id_or_model, "id", None)) is not None:
-        return id_
-    try:
-        return str(uuid.UUID(id_or_model))  # type: ignore [arg-type]
-    except ValueError:
-        raise ValueError(f"Cannot create a valid UUID from {id_or_model!r}") from None
-    except AttributeError:
-        raise TypeError(
-            f"Cannot convert {id_or_model!r} ({type(id_or_model)}) to a UUID"
-        ) from None
-
-
-def is_raw_data_asset(
-    asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
-) -> bool:
-    """
-    Determine if a data asset is raw data based on custom metadata or tags or
-    name.
-
-    In order of precedence:
-    - custom metadata with "data level": "raw data" is considered raw data
-    - tags containing "raw" are considered raw data
-    - if no custom metadata or tags are present, the asset name is checked: if it
-    is a session ID alone, with no suffixes, it is considered raw data
-
-    Examples
-    --------
-    >>> is_raw_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
-    True
-    >>> is_raw_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
-    False
-    """
-    asset = get_data_asset_model(asset_id_or_model)
-    if asset.custom_metadata and asset.custom_metadata.get("data level") == "raw data":
-        logger.debug(
-            f"{asset.id=} determined to be raw data based on custom_metadata containing 'data level': 'raw data'"
+    ],
+) -> tuple[codeocean.data_asset.DataAsset, ...]:
+    """Sort data assets or computations by ascending creation date. Accepts IDs or models."""
+    return tuple(
+        sorted(
+            (get_codeocean_model(a) for a in ids_or_models),
+            key=lambda asset: asset.created,
         )
-        return True
-    else:
-        logger.debug(f"{asset.id=} has no custom metadata")
-    if asset.tags and any("raw" in tag for tag in asset.tags):
-        logger.debug(
-            f"{asset.id=} determined to be raw data based on tag(s) containing 'raw'"
-        )
-        return True
-    else:
-        logger.debug(f"{asset.id=} has no tags")
-    logger.info(
-        f"No custom metadata or tags for {asset.id=}: determining if raw data asset based on name alone"
     )
-    try:
-        session_id = str(npc_session.AINDSessionRecord(asset.name))
-    except ValueError:
-        logger.debug(
-            f"{asset.id=} name does not contain a valid session ID: {asset.name=}"
-        )
-        return False
-    else:
-        if session_id == asset.name:
-            logger.debug(
-                f"{asset.id=} name is a session ID alone, with no additional suffixes: it is considered raw data {asset.name=}"
-            )
-            return True
-        else:
-            logger.debug(
-                f"{asset.id=} name is not a session ID alone: it is not considered raw data {asset.name=}"
-            )
-            return False
 
 
 @functools.cache
@@ -356,60 +298,6 @@ def get_data_asset_source_dir(
             f"No source_bucket metadata available for {asset.id}, {asset.name}"
         )
     return get_dir_from_known_s3_locations(asset)
-
-
-@functools.cache
-def get_subject_data_assets(
-    subject_id: str | int,
-    ttl_hash: int | None = None,
-    **search_params,
-) -> tuple[codeocean.data_asset.DataAsset, ...]:
-    """
-    Get all assets associated with a subject ID.
-
-    - uses the `subject` field in asset metadata
-    - `subject_id` will be cast to a string for searching
-    - subject ID is not required to be a labtracks MID
-    - assets are sorted by ascending creation date
-    - provide additional search parameters to filter results, as schematized in `codeocean.data_asset.DataAssetSearchParams`:
-    https://github.com/codeocean/codeocean-sdk-python/blob/4d9cf7342360820f3d9bd59470234be3e477883e/src/codeocean/data_asset.py#L199
-
-    - `ttl_hash` is used to cache the result for a given number of seconds (time-to-live)
-        - default None means cache indefinitely
-        - use `aind_utils.get_ttl_hash(seconds)` to generate a new ttl_hash periodically
-
-    Examples
-    --------
-
-    Search with a subject ID as str or int (will be cast as str):
-    >>> assets = get_subject_data_assets(668759)
-    >>> type(assets[0])
-    <class 'codeocean.data_asset.DataAsset'>
-    >>> assets[0].created
-    1673996872
-    >>> assets[0].name
-    'Example T1 and T2 MRI Images'
-    >>> assets[0].tags
-    ['T1', 'T2', 'MRI', 'demo']
-
-    Additional search parameters can be supplied as kwargs:
-    >>> filtered_assets = get_subject_data_assets(668759, type='dataset')
-    """
-    del ttl_hash  # only used for functools.cache
-
-    if "query" in search_params:
-        raise ValueError(
-            "Cannot provide 'query' as a search parameter: a new query will be created using 'subject id' field to search for assets"
-        )
-    search_params["query"] = get_data_asset_search_query(subject_id=subject_id)
-    search_params["sort_field"] = codeocean.data_asset.DataAssetSortBy.Created
-    search_params["sort_order"] = codeocean.components.SortOrder.Ascending
-    assets = search_data_assets(search_params)
-    if not assets and not npc_session.extract_subject(str(subject_id)):
-        logger.warning(
-            f"No assets were found for {subject_id=}, which does not appear to be a Labtracks MID"
-        )
-    return assets
 
 
 def get_data_asset_search_query(
@@ -625,6 +513,60 @@ def search_computations(
 
 
 @functools.cache
+def get_subject_data_assets(
+    subject_id: str | int,
+    ttl_hash: int | None = None,
+    **search_params,
+) -> tuple[codeocean.data_asset.DataAsset, ...]:
+    """
+    Get all assets associated with a subject ID.
+
+    - uses the `subject` field in asset metadata
+    - `subject_id` will be cast to a string for searching
+    - subject ID is not required to be a labtracks MID
+    - assets are sorted by ascending creation date
+    - provide additional search parameters to filter results, as schematized in `codeocean.data_asset.DataAssetSearchParams`:
+    https://github.com/codeocean/codeocean-sdk-python/blob/4d9cf7342360820f3d9bd59470234be3e477883e/src/codeocean/data_asset.py#L199
+
+    - `ttl_hash` is used to cache the result for a given number of seconds (time-to-live)
+        - default None means cache indefinitely
+        - use `aind_utils.get_ttl_hash(seconds)` to generate a new ttl_hash periodically
+
+    Examples
+    --------
+
+    Search with a subject ID as str or int (will be cast as str):
+    >>> assets = get_subject_data_assets(668759)
+    >>> type(assets[0])
+    <class 'codeocean.data_asset.DataAsset'>
+    >>> assets[0].created
+    1673996872
+    >>> assets[0].name
+    'Example T1 and T2 MRI Images'
+    >>> assets[0].tags
+    ['T1', 'T2', 'MRI', 'demo']
+
+    Additional search parameters can be supplied as kwargs:
+    >>> filtered_assets = get_subject_data_assets(668759, type='dataset')
+    """
+    del ttl_hash  # only used for functools.cache
+
+    if "query" in search_params:
+        raise ValueError(
+            "Cannot provide 'query' as a search parameter: a new query will be created using 'subject id' field to search for assets"
+        )
+    search_params["query"] = get_data_asset_search_query(subject_id=subject_id)
+    search_params["sort_field"] = codeocean.data_asset.DataAssetSortBy.Created
+    search_params["sort_order"] = codeocean.components.SortOrder.Ascending
+    assets = search_data_assets(search_params)
+    if not assets and not npc_session.extract_subject(str(subject_id)):
+        logger.warning(
+            f"No assets were found for {subject_id=}, which does not appear to be a Labtracks MID"
+        )
+    return assets
+
+
+@functools.cache
 def get_session_data_assets(
     session_id: str | npc_session.AINDSessionRecord,
     ttl_hash: int | None = None,
@@ -678,6 +620,64 @@ def get_session_data_assets(
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
     assets = search_data_assets(search_params)
     return assets
+
+
+def is_raw_data_asset(
+    asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
+) -> bool:
+    """
+    Determine if a data asset is raw data based on custom metadata or tags or
+    name.
+
+    In order of precedence:
+    - custom metadata with "data level": "raw data" is considered raw data
+    - tags containing "raw" are considered raw data
+    - if no custom metadata or tags are present, the asset name is checked: if it
+    is a session ID alone, with no suffixes, it is considered raw data
+
+    Examples
+    --------
+    >>> is_raw_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
+    True
+    >>> is_raw_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
+    False
+    """
+    asset = get_data_asset_model(asset_id_or_model)
+    if asset.custom_metadata and asset.custom_metadata.get("data level") == "raw data":
+        logger.debug(
+            f"{asset.id=} determined to be raw data based on custom_metadata containing 'data level': 'raw data'"
+        )
+        return True
+    else:
+        logger.debug(f"{asset.id=} has no custom metadata")
+    if asset.tags and any("raw" in tag for tag in asset.tags):
+        logger.debug(
+            f"{asset.id=} determined to be raw data based on tag(s) containing 'raw'"
+        )
+        return True
+    else:
+        logger.debug(f"{asset.id=} has no tags")
+    logger.info(
+        f"No custom metadata or tags for {asset.id=}: determining if raw data asset based on name alone"
+    )
+    try:
+        session_id = str(npc_session.AINDSessionRecord(asset.name))
+    except ValueError:
+        logger.debug(
+            f"{asset.id=} name does not contain a valid session ID: {asset.name=}"
+        )
+        return False
+    else:
+        if session_id == asset.name:
+            logger.debug(
+                f"{asset.id=} name is a session ID alone, with no additional suffixes: it is considered raw data {asset.name=}"
+            )
+            return True
+        else:
+            logger.debug(
+                f"{asset.id=} name is not a session ID alone: it is not considered raw data {asset.name=}"
+            )
+            return False
 
 
 def get_output_text(
