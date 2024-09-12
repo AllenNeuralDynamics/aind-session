@@ -357,7 +357,9 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.is_sorting_fail
         False
         """
-        return aind_session.utils.codeocean_utils.is_asset_error(self.sorted_data_asset)
+        return aind_session.utils.codeocean_utils.is_data_asset_error(
+            self.sorted_data_asset
+        )
 
     def run_sorting(
         self,

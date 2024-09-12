@@ -730,7 +730,7 @@ def get_output_text(
         return (get_data_asset_source_dir(asset.id) / "output").read_text()
 
 
-def is_asset_error(
+def is_data_asset_error(
     asset_id_or_model: str | uuid.UUID | codeocean.data_asset.DataAsset,
 ) -> bool:
     """Make a best-effort determination of whether a data asset is created from a
@@ -751,9 +751,9 @@ def is_asset_error(
     Examples
     --------
 
-    >>> aind_session.is_asset_error('9eb51aaf-9b45-4bd9-8b43-85d7c2781ac7')
+    >>> aind_session.is_data_asset_error('9eb51aaf-9b45-4bd9-8b43-85d7c2781ac7')
     True
-    >>> aind_session.is_asset_error('153419c7-09c4-43ce-9776-45bd63c50f72')
+    >>> aind_session.is_data_asset_error('153419c7-09c4-43ce-9776-45bd63c50f72')
     False
     """
     asset = get_data_asset_model(asset_id_or_model)
