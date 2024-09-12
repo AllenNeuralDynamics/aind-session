@@ -2,4 +2,4 @@
 from aind_session.extensions.ecephys import EcephysExtension as ecephys
 from aind_session.extensions.lims import LimsExtension as lims
 
-__all__ = ["ecephys"]
+__all__ = ["ecephys", "lims"]
