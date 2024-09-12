@@ -77,7 +77,7 @@ class Session:
     # autocompletion, etc.
     ecephys: aind_session.extensions.ecephys.EcephysExtension  # type: ignore [name-defined]
     lims: aind_session.extensions.lims.LimsExtension  # type: ignore [name-defined]
-    
+
     def __init__(self, session_id: str) -> None:
         """
         Initialize a session object from a session ID, or a string containing one.
