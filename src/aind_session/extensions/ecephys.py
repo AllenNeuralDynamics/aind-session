@@ -410,7 +410,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
             current_computations = (
                 aind_session.utils.codeocean_utils.search_computations(
                     capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
-                    data_asset_id=asset.id,
+                    attached_data_asset_id=asset.id,
                     in_progress=True,
                     ttl_hash=aind_session.utils.get_ttl_hash(
                         1
@@ -455,7 +455,7 @@ class Ecephys(aind_session.extension.ExtensionBaseClass):
         """
         return aind_session.utils.codeocean_utils.search_computations(
             capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
-            data_asset_id=self._session.raw_data_asset.id,
+            attached_data_asset_id=self._session.raw_data_asset.id,
             in_progress=True,
             ttl_hash=aind_session.utils.get_ttl_hash(1 * 60),
         )

@@ -561,7 +561,7 @@ def search_computations(
     >>> computations = search_computations(pipeline_id, in_progress=True)
     >>> computations = search_computations(pipeline_id, computation_state="failed")
     >>> computations = search_computations(pipeline_id, name="Run With Parameters 4689084")
-    >>> computations = search_computations(pipeline_id, data_asset_id="83636983-f80d-42d6-a075-09b60c6abd5e")
+    >>> computations = search_computations(pipeline_id, attached_data_asset_id="83636983-f80d-42d6-a075-09b60c6abd5e")
     """
     del ttl_hash  # only used for functools.cache
 
