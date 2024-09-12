@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @aind_session.extension.register_namespace("ecephys")
-class Ecephys(aind_session.extension.ExtensionBaseClass):
+class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     """Extension providing an ecephys modality namespace, for handling sorted data
     assets etc.
 
