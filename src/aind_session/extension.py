@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 _reserved_namespaces: set[str] = set()
 
-_NS = TypeVar("NS")
+_NS = TypeVar("_NS")
 
 
 def register_namespace(name: str) -> Callable[[type[_NS]], type[_NS]]:
