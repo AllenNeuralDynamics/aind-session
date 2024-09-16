@@ -6,7 +6,7 @@ import doctest
 import importlib.metadata
 import logging
 
-import npc_io # ensures .env files are read
+import npc_io  # ensures .env files are read
 
 # import functions from submodules here:
 from aind_session.extension import *
