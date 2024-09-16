@@ -347,8 +347,8 @@ class Session:
 
 def get_sessions(
     subject_id: int | str,
-    platform: str | None = None,
     date: str | datetime.date | datetime.datetime | None = None,
+    platform: str | None = None,
     start_date: str | datetime.date | datetime.datetime | None = None,
     end_date: str | datetime.date | datetime.datetime | None = None,
 ) -> tuple[Session, ...]:
