@@ -26,9 +26,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     Examples
     --------
     >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-    >>> session.ecephys.sorted_data_asset.id
+    >>> session.ecephys.latest_ks25_sorted_data_asset.id
     'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
-    >>> session.ecephys.sorted_data_asset.name
+    >>> session.ecephys.latest_ks25_sorted_data_asset.name
     'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
     >>> session.ecephys.clipped_dir.as_posix()
     's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
@@ -117,7 +117,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         return True
 
     @property
-    def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
+    def latest_ks25_sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest sorted data asset associated with the session.
 
         Raises `AttributeError` if no sorted data assets are found.
@@ -125,6 +125,15 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> asset = session.ecephys.latest_ks25_sorted_data_asset
+        >>> asset.id        # doctest: +SKIP
+        'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
+        >>> asset.name      # doctest: +SKIP
+        'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
+        >>> asset.created   # doctest: +SKIP
+        1709420992
+        """
+        return self.get_latest_sorted_data_asset(sorter_name="kilosort2_5")
 
     def get_latest_sorted_data_asset(
         self,
@@ -190,18 +199,18 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         's3://codeocean-s3datasetsbucket-1u41qdg42ur9/a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
         """
         try:
-            _ = self.sorted_data_asset
+            _ = self.latest_ks25_sorted_data_asset
         except AttributeError:
             raise AttributeError(
                 f"No sorted data asset found in CodeOcean for {self._session.id}. Has the session been sorted?"
             ) from None
         else:
             logger.debug(
-                f"Using asset {self.sorted_data_asset.id} to find sorted data path for {self._session.id}"
+                f"Using asset {self.latest_ks25_sorted_data_asset.id} to find sorted data path for {self._session.id}"
             )
             sorted_data_dir = (
                 aind_session.utils.codeocean_utils.get_data_asset_source_dir(
-                    asset_id=self.sorted_data_asset.id
+                    asset_id=self.latest_ks25_sorted_data_asset.id
                 )
             )
             logger.debug(
@@ -319,7 +328,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.sorted_probes
         ('46100', '46110')
         """
-        return self.get_sorted_probe_names(self.sorted_data_asset.id)
+        return self.get_sorted_probe_names(self.latest_ks25_sorted_data_asset.id)
 
     @staticmethod
     def get_sorted_probe_names(
@@ -381,7 +390,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         False
         """
         return aind_session.utils.codeocean_utils.is_data_asset_error(
-            self.sorted_data_asset
+            self.latest_ks25_sorted_data_asset
         )
 
     def run_sorting(
@@ -496,15 +505,15 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         - `si_folder.json` (in `spikesorted` dir)
         - `sorting.json` (in `postprocessed` dir)
         - `params.json` (in root of asset, for older assets)
-        
+
         Raises `ValueError` if none of the json files exist, or if none contain the
         `sorter_name` key, either of which indicates that the asset data is
         incomplete due to the sorting pipeline failing for all probes.
-        
+
         Examples
         --------
         `sorter_name` in:
-        
+
         processing.json['processing_pipeline']['data_processes'][index]['parameters']['sorter_name']:
         >>> aind_session.ecephys.get_sorter_name('921a186a-d8ff-4efc-8e1a-891fde8cd394')
         'kilosort2_5'
@@ -512,12 +521,12 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         processing.json['data_processes'][index]['parameters']['sorter_name']:
         >>> aind_session.ecephys.get_sorter_name('205fc2d0-5f00-468f-a82d-47c94afcd40c')
         'kilosort2_5'
-        
-        
-        processing.json['data_processes'][index]['parameters'] has no 'sorter_name' key: 
+
+
+        processing.json['data_processes'][index]['parameters'] has no 'sorter_name' key:
         >>> aind_session.ecephys.get_sorter_name('bd0ad804-4a33-4613-9d6c-6281e442bade')
         'kilosort2_5'
-        
+
         Incomplete data in sorted asset (sorting failed for all probes):
         >>> aind_session.ecephys.get_sorter_name('779eb3ca-9652-4476-a283-0022e2d3f1e4')
         Traceback (most recent call last):
@@ -528,19 +537,23 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         source_dir = aind_session.utils.codeocean_utils.get_data_asset_source_dir(
             aind_session.utils.codeocean_utils.get_normalized_uuid(data_asset_id)
         )
-        
+
         def _get_sorter_name_from_processing_json(source_dir: upath.UPath) -> str:
             processing_path = source_dir / "processing.json"
             if not processing_path.exists():
                 raise FileNotFoundError(f"No 'processing.json' found in {source_dir}")
             processing_text = processing_path.read_text()
             if "sorter_name:" not in processing_text:
-                raise KeyError(f"No 'sorter_name' value found in processing.json for {data_asset_id=}")
+                raise KeyError(
+                    f"No 'sorter_name' value found in processing.json for {data_asset_id=}"
+                )
             processing: dict = json.loads(processing_text)
             if "processing_pipeline" in processing:
                 data_processes = processing["processing_pipeline"]["data_processes"]
             else:
-                assert "data_processes" in processing, f"Fix method of getting sorter name: 'data_processes' not in processing.json for {data_asset_id=}"
+                assert (
+                    "data_processes" in processing
+                ), f"Fix method of getting sorter name: 'data_processes' not in processing.json for {data_asset_id=}"
                 data_processes = processing["data_processes"]
             for p in data_processes:
                 if isinstance(p, list):
@@ -561,30 +574,38 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                 "parameters" in sorting
             ), f"Fix method of getting sorter name: 'parameters' not in 'Spike sorting' data process in processing.json for {data_asset_id=}"
             if "sorter_name" not in sorting["parameters"]:
-                raise KeyError(f"No 'sorter_name' key found in sorting parameters in processing.json")
+                raise KeyError(
+                    "No 'sorter_name' key found in sorting parameters in processing.json"
+                )
             sorter_name: str = sorting["parameters"]["sorter_name"]
             logger.debug(f"Found sorter name in processing.json: {sorter_name}")
             return sorter_name
-        
+
         def _get_sorter_name_from_sorted_folders(source_dir: upath.UPath) -> str:
             json_paths = []
-            for json_path in (
-                    itertools.chain(
-                        (source_dir / "spikesorted").rglob("si_folder.json"),
-                        (source_dir / "postprocessed").rglob("sorting.json"),
-                    )
+            for json_path in itertools.chain(
+                (source_dir / "spikesorted").rglob("si_folder.json"),
+                (source_dir / "postprocessed").rglob("sorting.json"),
             ):
                 json_paths.append(json_path)
                 info = json_path.read_text()
                 if "sorter_name" in info:
-                    sorter_name = json.loads(info)["annotations"]["__sorting_info__"]["params"]["sorter_name"]
-                    logger.debug(f"Found sorter name in {json_path.name}: {sorter_name}")
+                    sorter_name = json.loads(info)["annotations"]["__sorting_info__"][
+                        "params"
+                    ]["sorter_name"]
+                    logger.debug(
+                        f"Found sorter name in {json_path.name}: {sorter_name}"
+                    )
             else:
                 if not json_paths:
-                    raise FileNotFoundError(f"No 'processing.json', 'si_folder.json', or 'sorting.json' files found - asset {data_asset_id} likely contains incomplete data")
+                    raise FileNotFoundError(
+                        f"No 'processing.json', 'si_folder.json', or 'sorting.json' files found - asset {data_asset_id} likely contains incomplete data"
+                    )
                 else:
-                    raise KeyError(f"Fix method of getting sorter name: 'sorter_name' not a value in {set(p.name for p in json_paths)} for {data_asset_id=}")
-        
+                    raise KeyError(
+                        f"Fix method of getting sorter name: 'sorter_name' not a value in {set(p.name for p in json_paths)} for {data_asset_id=}"
+                    )
+
         def _get_sorter_name_from_params_json(source_dir: upath.UPath) -> str:
             params_path = source_dir / "params.json"
             if not params_path.exists():
@@ -593,20 +614,29 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             if "sorter_name" not in params_text:
                 raise KeyError(f"No 'sorter_name' value found in {params_path.name}")
             params: dict = json.loads(params_text)
-            assert params, f"Fix method of getting sorter name: {params=} for {data_asset_id=}"
-            assert "spikesorting" in params, f"Fix method of getting sorter name: 'spikesorting' not in {params_path.name} for {data_asset_id=}"
-            assert "sorter_name" in params["spikesorting"], f"Fix method of getting sorter name: 'sorter_name' not in 'spikesorting' in {params_path.name} for {data_asset_id=}"
+            assert (
+                params
+            ), f"Fix method of getting sorter name: {params=} for {data_asset_id=}"
+            assert (
+                "spikesorting" in params
+            ), f"Fix method of getting sorter name: 'spikesorting' not in {params_path.name} for {data_asset_id=}"
+            assert (
+                "sorter_name" in params["spikesorting"]
+            ), f"Fix method of getting sorter name: 'sorter_name' not in 'spikesorting' in {params_path.name} for {data_asset_id=}"
             sorter_name = params["spikesorting"]["sorter_name"]
             logger.debug(f"Found sorter name in params.json: {sorter_name}")
             return sorter_name
-        
+
         with contextlib.suppress(FileNotFoundError, KeyError):
             return _get_sorter_name_from_processing_json(source_dir)
         with contextlib.suppress(FileNotFoundError, KeyError):
             return _get_sorter_name_from_sorted_folders(source_dir)
         with contextlib.suppress(FileNotFoundError, KeyError):
             return _get_sorter_name_from_params_json(source_dir)
-        raise ValueError(f"Sorting data are incomplete for {data_asset_id=!r} (pipeline likely failed) - cannot get sorter name")
+        raise ValueError(
+            f"Sorting data are incomplete for {data_asset_id=!r} (pipeline likely failed) - cannot get sorter name"
+        )
+
 
 if __name__ == "__main__":
     from aind_session import testmod
