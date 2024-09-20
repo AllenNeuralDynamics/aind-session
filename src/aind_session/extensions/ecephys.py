@@ -26,9 +26,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     Examples
     --------
     >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-    >>> session.ecephys.sorted_data_asset.id
+    >>> session.ecephys.latest_ks25_sorted_data_asset.id
     'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
-    >>> session.ecephys.sorted_data_asset.name
+    >>> session.ecephys.latest_ks25_sorted_data_asset.name
     'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
     >>> session.ecephys.clipped_dir.as_posix()
     's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
@@ -117,7 +117,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         return True
 
     @property
-    def sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
+    def latest_ks25_sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
         """Latest sorted data asset associated with the session.
 
         Raises `AttributeError` if no sorted data assets are found.
@@ -125,6 +125,15 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> asset = session.ecephys.latest_ks25_sorted_data_asset
+        >>> asset.id        # doctest: +SKIP
+        'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
+        >>> asset.name      # doctest: +SKIP
+        'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
+        >>> asset.created   # doctest: +SKIP
+        1709420992
+        """
+        return self.get_latest_sorted_data_asset(sorter_name="kilosort2_5")
 
     def get_latest_sorted_data_asset(
         self,
@@ -190,18 +199,18 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         's3://codeocean-s3datasetsbucket-1u41qdg42ur9/a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
         """
         try:
-            _ = self.sorted_data_asset
+            _ = self.latest_ks25_sorted_data_asset
         except AttributeError:
             raise AttributeError(
                 f"No sorted data asset found in CodeOcean for {self._session.id}. Has the session been sorted?"
             ) from None
         else:
             logger.debug(
-                f"Using asset {self.sorted_data_asset.id} to find sorted data path for {self._session.id}"
+                f"Using asset {self.latest_ks25_sorted_data_asset.id} to find sorted data path for {self._session.id}"
             )
             sorted_data_dir = (
                 aind_session.utils.codeocean_utils.get_data_asset_source_dir(
-                    asset_id=self.sorted_data_asset.id
+                    asset_id=self.latest_ks25_sorted_data_asset.id
                 )
             )
             logger.debug(
@@ -319,7 +328,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.sorted_probes
         ('46100', '46110')
         """
-        return self.get_sorted_probe_names(self.sorted_data_asset.id)
+        return self.get_sorted_probe_names(self.latest_ks25_sorted_data_asset.id)
 
     @staticmethod
     def get_sorted_probe_names(
@@ -381,7 +390,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         False
         """
         return aind_session.utils.codeocean_utils.is_data_asset_error(
-            self.sorted_data_asset
+            self.latest_ks25_sorted_data_asset
         )
 
     def run_sorting(

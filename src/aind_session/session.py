@@ -69,7 +69,7 @@ class Session:
 
     Additional functionality for modalities added by extensions:
     >>> session = Session('ecephys_676909_2023-12-13_13-43-40')
-    >>> session.ecephys.sorted_data_asset.id            # doctest: +SKIP
+    >>> session.ecephys.latest_ks25_sorted_data_asset.id            # doctest: +SKIP
 
     """
 

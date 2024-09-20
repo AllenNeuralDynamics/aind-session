@@ -82,7 +82,7 @@ dict_keys(['_id', 'acquisition', 'created', 'data_description', 'describedBy', '
 # Additional functionality in namespace extensions:
 >>> session.ecephys.is_sorted
 True
->>> session.ecephys.sorted_data_asset.name
+>>> session.ecephys.latest_ks25_sorted_data_asset.name
 'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
 
 # Objects refer to the original session, regardless of how they were created:
@@ -144,7 +144,7 @@ When working in a capsule, the `Session` object can be used to find or verify at
 [Session('ecephys_676909_2023-12-11_14-24-35'), Session('ecephys_676909_2023-12-13_13-43-40')]
 
 # check that particular sessions have their raw data or latest sorted data assets attached:
->>> attached_sessions[0].ecephys.sorted_data_asset.name in attached_data_names
+>>> attached_sessions[0].ecephys.latest_ks25_sorted_data_asset.name in attached_data_names
 True
 >>> attached_sessions[0].raw_data_asset.name in attached_data_names
 False
