@@ -125,7 +125,22 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> asset = session.ecephys.sorted_data_asset
+
+    def get_latest_sorted_data_asset(
+        self,
+        sorter_name: str | None = "kilosort2_5",
+    ) -> codeocean.data_asset.DataAsset:
+        """Get the latest sorted data asset associated with the session.
+
+        - if `sorter_name` is None, the latest sorted data asset is returned
+          regardless of the sorter used
+        - raises `AttributeError` if no sorted data assets are found
+        - raises `ValueError` if the sorter name does not match the expected value
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> asset = session.ecephys.get_latest_sorted_data_asset()
         >>> asset.id        # doctest: +SKIP
         'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
         >>> asset.name      # doctest: +SKIP
@@ -143,13 +158,18 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             )
         else:
             raise AttributeError(
-                f"No sorted data asset found for {self._session.id}:",
+                f"No sorted data assets found for {self._session.id}:",
                 (
                     " raw data has not been uploaded yet."
                     if not self._session.is_uploaded
                     else " try session.ecephys.run_sorting()"
                 ),
             )
+        if sorter_name is not None:
+            if (sorter := self.get_sorter_name(asset)) != sorter_name:
+                raise ValueError(
+                    f"Expected sorter name {sorter_name!r} but found {sorter!r} for {asset.id=}"
+                )
         logger.debug(f"Using {asset.id=} for {self._session.id} sorted data asset")
         return asset
 
