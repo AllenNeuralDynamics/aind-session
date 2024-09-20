@@ -12,7 +12,7 @@ dependencies = [
     "npc-session>=0.1.39",
     "aind-data-access-api[docdb]>=0.14.0",
 ]
-version = "0.2.4"
+version = "0.2.5"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
