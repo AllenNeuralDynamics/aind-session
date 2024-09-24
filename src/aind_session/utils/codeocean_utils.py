@@ -413,6 +413,7 @@ def search_computations(
     capsule_or_pipeline_id: str | uuid.UUID,
     name: str | None = None,
     attached_data_asset_id: str | None = None,
+    has_results: bool | None = None,
     in_progress: bool | None = None,
     computation_state: codeocean.computation.ComputationState | None = None,
     ttl_hash: int | None = None,
@@ -447,6 +448,7 @@ def search_computations(
 
     Filter by computation metadata:
     >>> computations = search_computations(pipeline_id, in_progress=True)
+    >>> computations = search_computations(pipeline_id, has_results=True)
     >>> computations = search_computations(pipeline_id, computation_state="failed")
     >>> computations = search_computations(pipeline_id, name="Run With Parameters 4689084")
     >>> computations = search_computations(pipeline_id, attached_data_asset_id="83636983-f80d-42d6-a075-09b60c6abd5e")
@@ -475,6 +477,8 @@ def search_computations(
                 for input_data_asset in record.get("data_assets", [])
             )
         ]
+    if has_results is not None:
+        records = [record for record in records if record["has_results"]]
     if in_progress is not None:
         records = [
             record
