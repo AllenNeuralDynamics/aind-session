@@ -641,8 +641,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         with contextlib.suppress(FileNotFoundError, KeyError):
             return _get_sorter_name_from_params_json(source_dir)
         raise ValueError(
-            f"Sorting data are incomplete for {data_asset_id=!r} (pipeline likely failed) - cannot get sorter name"
+            f"Cannot get sorter name: sorting data are incomplete for {data_asset_id=!r} (pipeline likely failed)"
         )
+
 
 
 if __name__ == "__main__":
