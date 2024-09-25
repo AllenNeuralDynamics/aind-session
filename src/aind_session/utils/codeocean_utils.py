@@ -207,7 +207,7 @@ def get_data_asset_model(
         )
     except requests.HTTPError as exc:
         if exc.response.status_code == 404:
-            raise ValueError(f"No data asset found matching ID {asset_id_or_model}")
+            raise ValueError(f"No data asset found matching ID {asset_id_or_model}") from exc
         else:
             raise
 
