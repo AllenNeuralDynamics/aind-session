@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import concurrent.futures
 import contextlib
-import datetime
+import functools
 import itertools
 import json
 import logging
@@ -25,198 +26,39 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
 
     Examples
     --------
+    Access the ecephys extension namespace on a session object:
     >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-    >>> session.ecephys.latest_ks25_sorted_data_asset.id
-    'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
-    >>> session.ecephys.latest_ks25_sorted_data_asset.name
-    'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
+    >>> session.ecephys
+    EcephysExtension(Session('ecephys_676909_2023-12-13_13-43-40'))
     >>> session.ecephys.clipped_dir.as_posix()
     's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
+
+    The extension mostly provides static methods, which can be used without
+    a session object if necessary:
+    >>> aind_session.ecephys
+    <class 'aind_session.extensions.ecephys.EcephysExtension'>
+    >>> clipped, compressed = aind_session.ecephys.get_clipped_and_compressed_dirs('16d46411-540a-4122-b47f-8cb2a15d593a')
+
+    Access all sorted assets for a session (may be empty, or may include
+    incomplete assets failed pipeline runs):
+    >>> session.ecephys.sorted_data_assets[0].name
+    'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
+
+    Access subsets of data assets by sorter name:
+    >>> session.ecephys.sorter.kilosort2_5.data_assets[0].id
+    '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
+    >>> session.ecephys.sorter.kilosort2_5.data_assets[0].name
+    'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
+
+    Returned models are enhanced with sorting pipeline-related properties:
+    >>> session.ecephys.sorted_data_assets[0].sorted_probes
+    ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
+    >>> session.ecephys.sorted_data_assets[0].sorter_name
+    'kilosort2_5'
     """
 
-    SORTING_PIPELINE_ID: ClassVar[str] = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
-    TRIGGER_CAPSULE_ID: ClassVar[str] = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
-
-    @property
-    def sorted_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
-        """All sorted data assets associated with the session (may be empty).
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.sorted_data_assets[0].id
-        '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
-        >>> session.ecephys.sorted_data_assets[0].name
-        'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
-        >>> session.ecephys.sorted_data_assets[0].created
-        1702783011
-
-        Empty if no sorted data assets are found:
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-39')
-        >>> session.ecephys.sorted_data_assets
-        ()
-        """
-        assets = tuple(
-            asset
-            for asset in self._session.data_assets
-            if self.is_sorted_data_asset(asset)
-        )
-        logger.debug(
-            f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}"
-        )
-        return assets
-
-    @staticmethod
-    def is_sorted_data_asset(asset_id: str | codeocean.data_asset.DataAsset) -> bool:
-        """Check if the asset is a sorted data asset.
-
-        - assumes sorted asset to be named <session-id>_sorted<unknown-suffix>
-        - does not assume platform to be `ecephys`
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.is_sorted_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
-        True
-        >>> session.ecephys.is_sorted_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
-        False
-        """
-        asset = aind_session.utils.codeocean_utils.get_data_asset_model(asset_id)
-        try:
-            session_id = str(npc_session.AINDSessionRecord(asset.name))
-        except ValueError:
-            logger.debug(
-                f"{asset.name=} does not contain a valid session ID: determined to be not a sorted data asset"
-            )
-            return False
-        if asset.name.startswith(f"{session_id}_sorted"):
-            logger.debug(
-                f"{asset.name=} determined to be a sorted data asset based on name starting with '<session-id>_sorted'"
-            )
-            return True
-        else:
-            logger.debug(
-                f"{asset.name=} determined to be not a sorted data asset based on name starting with '<session-id>_sorted'"
-            )
-            return False
-
-    @property
-    def is_sorted(self) -> bool:
-        """Check if a sorted data asset exists, and is not in an error state.
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.is_sorted
-        True
-        """
-        if not self.sorted_data_assets:
-            return False
-        if self.is_sorting_fail:
-            return False
-        return True
-
-    @property
-    def latest_ks25_sorted_data_asset(self) -> codeocean.data_asset.DataAsset:
-        """Latest sorted data asset associated with the session.
-
-        Raises `AttributeError` if no sorted data assets are found.
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> asset = session.ecephys.latest_ks25_sorted_data_asset
-        >>> asset.id        # doctest: +SKIP
-        'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
-        >>> asset.name      # doctest: +SKIP
-        'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
-        >>> asset.created   # doctest: +SKIP
-        1709420992
-        """
-        return self.get_latest_sorted_data_asset(sorter_name="kilosort2_5")
-
-    def get_latest_sorted_data_asset(
-        self,
-        sorter_name: str | None = "kilosort2_5",
-    ) -> codeocean.data_asset.DataAsset:
-        """Get the latest sorted data asset associated with the session.
-
-        - if `sorter_name` is None, the latest sorted data asset is returned
-          regardless of the sorter used
-        - raises `AttributeError` if no sorted data assets are found
-        - raises `ValueError` if the sorter name does not match the expected value
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> asset = session.ecephys.get_latest_sorted_data_asset()
-        >>> asset.id        # doctest: +SKIP
-        'a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
-        >>> asset.name      # doctest: +SKIP
-        'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
-        >>> asset.created   # doctest: +SKIP
-        1709420992
-        """
-        if len(self.sorted_data_assets) == 1:
-            asset = self.sorted_data_assets[0]
-        elif len(self.sorted_data_assets) > 1:
-            asset = aind_session.utils.sort_by_created(self.sorted_data_assets)[-1]
-            created = datetime.datetime.fromtimestamp(asset.created).isoformat(sep=" ")
-            logger.info(
-                f"Found {len(self.sorted_data_assets)} sorted data assets for {self._session.id}: most recent asset will be used ({created=})"
-            )
-        else:
-            raise AttributeError(
-                f"No sorted data assets found for {self._session.id}:",
-                (
-                    " raw data has not been uploaded yet."
-                    if not self._session.is_uploaded
-                    else " try session.ecephys.run_sorting()"
-                ),
-            )
-        if sorter_name is not None:
-            if (sorter := self.get_sorter_name(asset)) != sorter_name:
-                raise ValueError(
-                    f"Expected sorter name {sorter_name!r} but found {sorter!r} for {asset.id=}"
-                )
-        logger.debug(f"Using {asset.id=} for {self._session.id} sorted data asset")
-        return asset
-
-    @property
-    def sorted_data_dir(self) -> upath.UPath:
-        """Path to the dir containing the latest sorted data associated with the
-        session, likely in an S3 bucket.
-
-        - uses latest sorted data asset to get path (existence is checked)
-        - if no sorted data asset is found, checks for a data dir in S3
-        - raises `AttributeError` if no sorted data assets are available to link
-          to the session
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.sorted_data_dir.as_posix()
-        's3://codeocean-s3datasetsbucket-1u41qdg42ur9/a2a54575-b5ca-4cf0-acd0-2933e18bcb2d'
-        """
-        try:
-            _ = self.latest_ks25_sorted_data_asset
-        except AttributeError:
-            raise AttributeError(
-                f"No sorted data asset found in CodeOcean for {self._session.id}. Has the session been sorted?"
-            ) from None
-        else:
-            logger.debug(
-                f"Using asset {self.latest_ks25_sorted_data_asset.id} to find sorted data path for {self._session.id}"
-            )
-            sorted_data_dir = (
-                aind_session.utils.codeocean_utils.get_data_asset_source_dir(
-                    asset_id=self.latest_ks25_sorted_data_asset.id
-                )
-            )
-            logger.debug(
-                f"Sorted data path found for {self._session.id}: {sorted_data_dir}"
-            )
-            return sorted_data_dir
+    DEFAULT_SORTING_PIPELINE_ID: ClassVar[str] = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
+    DEFAULT_TRIGGER_CAPSULE_ID: ClassVar[str] = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
 
     @property
     def clipped_dir(self) -> upath.UPath:
@@ -233,7 +75,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_clipped'
         """
         if (
-            path := self.get_clipped_and_compressed_dirs(
+            path := EcephysExtension.get_clipped_and_compressed_dirs(
                 self._session.raw_data_asset.id
             )[0]
         ) is None:
@@ -258,7 +100,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         's3://aind-ephys-data/ecephys_676909_2023-12-13_13-43-40/ecephys_compressed'
         """
         if (
-            path := self.get_clipped_and_compressed_dirs(
+            path := EcephysExtension.get_clipped_and_compressed_dirs(
                 self._session.raw_data_asset.id
             )[1]
         ) is None:
@@ -308,27 +150,295 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         return return_paths[0], return_paths[1]
 
     @property
-    def sorted_probes(self) -> tuple[str, ...]:
-        """Names of probes that reached the final stage of the sorting pipeline.
-
-        - checks for probe dirs in the session's latest sorted data dir
-        - checks a specific dir that indicates all processing completed:
-            - `sorting_precurated` was original dir name, then changed to `curated`
-        - probe folders named `experiment1_Record Node
-          104#Neuropix-PXI-100.ProbeF-AP_recording1` - from which `ProbeF` would
-          be extracted
-        - does not represent the recordings that were sorted
+    def is_sorted(self) -> bool:
+        """A sorted data asset exists, and it is in an error-free state.
 
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.sorted_probes
-        ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
-        >>> session = aind_session.Session('ecephys_728537_2024-08-21_17-41-36')
-        >>> session.ecephys.sorted_probes
-        ('46100', '46110')
+        >>> session.ecephys.is_sorted
+        True
         """
-        return self.get_sorted_probe_names(self.latest_ks25_sorted_data_asset.id)
+        if not self.sorted_data_assets:
+            return False
+        if self.sorted_data_assets[-1].is_sorting_error:
+            return False
+        logger.debug(
+            f"The latest sorted data asset for {self._session.id} appears to have been sorted successfully: {self.sorted_data_assets[-1].id}"
+        )
+        return True
+
+    @property
+    def sorted_data_assets(self) -> tuple[SortedDataAsset, ...]:
+        """All sorted data assets associated with the session (may be empty).
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.sorted_data_assets[0].id
+        '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
+        >>> session.ecephys.sorted_data_assets[0].name
+        'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
+        >>> session.ecephys.sorted_data_assets[0].created
+        1702783011
+
+        Empty if no sorted data assets are found:
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-39')
+        >>> session.ecephys.sorted_data_assets
+        ()
+        """
+        assets = tuple(
+            EcephysExtension.get_sorted_data_asset_model(asset)
+            for asset in self._session.data_assets
+            if EcephysExtension.is_sorted_data_asset(asset)
+        )
+        logger.debug(
+            f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}"
+        )
+        return assets
+
+
+    class SortedDataAsset(codeocean.data_asset.DataAsset):
+        """An instance of `codeocean.data_asset.DataAsset` with additional property
+        getters related to output from the spike sorting pipeline"""
+
+        @property
+        def path(self) -> upath.UPath:
+            """Path to source dir (likely on S3).
+
+            Examples
+            --------
+            >>> asset = aind_session.ecephys.get_sorted_data_asset_model('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
+            >>> asset.path.as_posix()
+            's3://codeocean-s3datasetsbucket-1u41qdg42ur9/1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
+            """
+            return aind_session.utils.codeocean_utils.get_data_asset_source_dir(self.id)
+
+        @property
+        def output(self) -> str:
+            """Contents of the `output` file in the asset's data dir.
+
+            Examples
+            --------
+            >>> asset = aind_session.ecephys.get_sorted_data_asset_model('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
+            >>> asset.output[-32:-1]
+            'FULL PIPELINE time:  161658.77s'
+            """
+            return aind_session.utils.codeocean_utils.get_output_text(self)
+
+        @property
+        def sorted_probes(self) -> tuple[str, ...]:
+            """Names of probes that reached the final stage of the sorting pipeline.
+
+
+            - checks for probe dirs in the asset's data dir
+            - checks a specific dir that indicates all processing completed:
+                - `sorting_precurated` was original dir name, then changed to `curated`
+            - probe folders named `experiment1_Record Node
+            104#Neuropix-PXI-100.ProbeF-AP_recording1` - from which `ProbeF` would
+            be extracted
+
+            Examples
+            --------
+            >>> asset = aind_session.ecephys.get_sorted_data_asset_model('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
+            >>> asset.sorted_probes
+            ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
+            """
+            return EcephysExtension.get_sorted_probe_names(self.id)
+
+        @property
+        def sorter_name(self) -> str:
+            """Name of the sorter used to create the sorted data asset (as specified
+            by SpikeInterface).
+
+            Examples
+            --------
+            >>> asset = aind_session.ecephys.get_sorted_data_asset_model('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
+            >>> asset.sorter_name
+            'kilosort2_5'
+            """
+            return EcephysExtension.get_sorter_name(self.id)
+
+        @property
+        def is_sorting_error(self) -> bool:
+            """The sorting pipeline failed for one or more probes, determined by the
+            files available in the asset's data dir and the presence of certain keywords
+            in the `output` file.
+
+            Examples
+            --------
+            >>> asset = aind_session.ecephys.get_sorted_data_asset_model('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
+            >>> asset.is_sorting_error
+            False
+            """
+            return aind_session.utils.codeocean_utils.is_output_error(self.output)
+
+
+    @staticmethod
+    def get_sorted_data_asset_model(
+        asset_id: str | codeocean.data_asset.DataAsset,
+    ) -> SortedDataAsset:
+        """Get an instance of `codeocean.data_asset.DataAsset` for the given asset
+        ID, with additional property getters related to output from the
+        spike-sorting pipeline.
+
+        Examples
+        --------
+        >>> asset = aind_session.ecephys.get_sorted_data_asset_model('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
+        >>> asset.id
+        '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
+        """
+        return EcephysExtension.SortedDataAsset.from_dict(
+            aind_session.utils.codeocean_utils.get_data_asset_model(asset_id).to_dict()
+        )
+
+    @staticmethod
+    def is_sorted_data_asset(asset_id: str | codeocean.data_asset.DataAsset) -> bool:
+        """Check if the asset is a sorted data asset.
+
+        - assumes sorted asset to be named `<session-id>_sorted<unknown-suffix>`
+        - does not assume platform to be `ecephys`
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.is_sorted_data_asset('173e2fdc-0ca3-4a4e-9886-b74207a91a9a')
+        True
+        >>> session.ecephys.is_sorted_data_asset('83636983-f80d-42d6-a075-09b60c6abd5e')
+        False
+        """
+        asset = aind_session.utils.codeocean_utils.get_data_asset_model(asset_id)
+        try:
+            session_id = str(npc_session.AINDSessionRecord(asset.name))
+        except ValueError:
+            logger.debug(
+                f"{asset.name=} does not contain a valid session ID: determined to be not a sorted data asset"
+            )
+            return False
+        if asset.name.startswith(f"{session_id}_sorted"):
+            logger.debug(
+                f"{asset.name=} determined to be a sorted data asset based on name starting with '<session-id>_sorted'"
+            )
+            return True
+        else:
+            logger.debug(
+                f"{asset.name=} determined to be not a sorted data asset based on name starting with '<session-id>_sorted'"
+            )
+            return False
+
+    @property
+    def sorter(self) -> _SorterNamespace:
+        """Namespace for accessing sorting pipeline output for different sorter
+        names.
+
+        Examples
+        --------
+        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+        >>> session.ecephys.sorter.kilosort2_5
+        SorterExtension(Session('ecephys_676909_2023-12-13_13-43-40'))
+        >>> session.ecephys.sorter.kilosort4
+        SorterExtension(Session('ecephys_676909_2023-12-13_13-43-40'))
+        """
+        return EcephysExtension._SorterNamespace(parent=self)
+
+    class _SorterNamespace:
+        """Namespace for accessing sorting pipeline output for different
+        sorter names.
+
+        - new sorter names can be accessed without modification: getattr creates
+          namespaces dynamically
+        - `sorter_names` property returns a list of all sorter names found in the
+          session's sorted data assets
+        """
+
+        # known sorter names can be added here to aid static typing/autocomplete:
+        kilosort2_5: EcephysExtension.SorterExtension
+        kilosort4: EcephysExtension.SorterExtension
+        spykingcircus2: EcephysExtension.SorterExtension
+
+        def __init__(self, parent: EcephysExtension):
+            self._parent = parent
+
+        def __getattr__(self, sorter_name: str) -> EcephysExtension.SorterExtension:
+            return EcephysExtension.SorterExtension(
+                ecephys=self._parent, sorter_name=sorter_name
+            )
+
+        @property
+        def names(self) -> tuple[str, ...]:
+            """Names of spike-sorters used across all of the session's sorted data
+            assets.
+
+            - names are determined by SpikeInterface and stored in `sorter_name`
+                - e.g. 'kilosort2_5', 'kilosort4'
+
+            Examples
+            --------
+            >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+            >>> session.ecephys.sorter.names   # doctest: +SKIP
+            ('kilosort2_5', 'kilosort4')
+            """
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                return tuple(
+                    sorted(
+                        set(
+                            executor.map(
+                                EcephysExtension.get_sorter_name,
+                                self._parent.sorted_data_assets,
+                            )
+                        )
+                    )
+                )
+
+    class SorterExtension(aind_session.extension.ExtensionBaseClass):
+        """Extension for different spike-sorters used by the sorting pipeline
+        (identified by SpikeInterface `sorter_name`), providing access to data
+        assets created by a specific sorter"""
+
+        def __init__(self, ecephys: EcephysExtension, sorter_name: str) -> None:
+            super().__init__(session=ecephys._session)
+            self._ecephys = ecephys
+            self._sorter_name = sorter_name
+
+        @property
+        def data_assets(self) -> tuple[EcephysExtension.SortedDataAsset, ...]:
+            """All data assets produced using the given SpikeInterface `sorter_name`
+            associated with the session (may be empty).
+
+            Examples
+            --------
+            >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
+            >>> session.ecephys.sorted_data_assets[0].id
+            '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
+            >>> session.ecephys.sorted_data_assets[0].name
+            'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
+            >>> session.ecephys.sorted_data_assets[0].created
+            1702783011
+
+            Empty if no sorted data assets are found:
+            >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-39')
+            >>> session.ecephys.sorted_data_assets
+            ()
+            """
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future_to_asset = {
+                    executor.submit(EcephysExtension.get_sorter_name, asset.id): asset
+                    for asset in self._ecephys.sorted_data_assets
+                }
+            assets = []
+            for future, asset in future_to_asset.items():
+                try:
+                    sorter_name = future.result()
+                except (
+                    ValueError
+                ):  # asset missing required information (e.g. sorting failed)
+                    continue
+                if sorter_name == self._sorter_name:
+                    assets.append(asset)
+            logger.debug(
+                f"Found {len(assets)} {self._sorter_name} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}"
+            )
+            return tuple(assets)
 
     @staticmethod
     def get_sorted_probe_names(
@@ -345,7 +455,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
 
         Examples
         --------
-        >>> aind_session.ecephys.get_sorted_probe_names('a2a54575-b5ca-4cf0-acd0-2933e18bcb2d')
+        >>> aind_session.ecephys.get_sorted_probe_names('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
         ('ProbeA', 'ProbeB', 'ProbeC', 'ProbeD', 'ProbeE', 'ProbeF')
         """
         asset_id = aind_session.utils.codeocean_utils.get_normalized_uuid(
@@ -379,25 +489,15 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         logger.debug(f"Found {len(probes)} probes in {parent_dir.as_posix()}: {probes}")
         return tuple(sorted(probes))
 
-    @property
-    def is_sorting_fail(self) -> bool:
-        """Check if the latest sorted data asset indicates that the sorting pipeline failed.
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-        >>> session.ecephys.is_sorting_fail
-        False
-        """
-        return aind_session.utils.codeocean_utils.is_data_asset_error(
-            self.latest_ks25_sorted_data_asset
-        )
-
     def run_sorting(
         self,
         pipeline_type: Literal[
-            "ecephys", "ecephys_opto", "ecephys_analyzer"
-        ] = "ecephys",
+            "ecephys_ks25",
+            "ecephys_ks25_v0.1.0",
+            "ecephys_opto_ks25",
+            "ecephys_ks4",
+            "ecephys_sc2",
+        ] = "ecephys_ks25",
         trigger_capsule_id: str = "eb5a26e4-a391-4d79-9da5-1ab65b71253f",
         override_parameters: list[str] | None = None,
         skip_already_sorting: bool = True,
@@ -443,7 +543,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         if skip_already_sorting:
             current_computations = (
                 aind_session.utils.codeocean_utils.search_computations(
-                    capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
+                    capsule_or_pipeline_id=self.DEFAULT_SORTING_PIPELINE_ID,
                     attached_data_asset_id=asset.id,
                     in_progress=True,
                     ttl_hash=aind_session.utils.get_ttl_hash(
@@ -469,33 +569,63 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         return computation
 
     @property
-    def current_sorting_computations(
+    def current_sorting_pipeline_computations(
         self,
     ) -> tuple[codeocean.computation.Computation, ...]:
         """
         All sorting pipeline computations that have the session's raw data asset
-        attached and have not finished.
+        attached and are still in progress.
 
-        - running defined as `computation.end_status is None`
+        - "in progress" defined as `computation.end_status is None`
         - sorted by ascending creation time
-        - defaults to https://codeocean.allenneuraldynamics.org/capsule/8510735/tree
-            - can be overridden with a different pipeline ID
+        - checks https://codeocean.allenneuraldynamics.org/capsule/8510735/tree
+        - result cached for 1 minute
+
         Examples
         --------
         >>> session = aind_session.Session('ecephys_733887_2024-08-16_12-16-49')
-        >>> computations = session.ecephys.current_sorting_computations
+        >>> computations = session.ecephys.current_sorting_pipeline_computations
+        >>> [c.name for c in computations]   # doctest: +SKIP
+        ['Run With Parameters 4689084']
+        """
+        return EcephysExtension.get_current_sorting_pipeline_computations(
+            pipeline_id=self.DEFAULT_SORTING_PIPELINE_ID,
+            raw_data_asset_id_or_model=self._session.raw_data_asset.id,
+        )
+
+    @staticmethod
+    def get_current_sorting_pipeline_computations(
+        pipeline_id: str = "1f8f159a-7670-47a9-baf1-078905fc9c2e",
+        raw_data_asset_id_or_model: str | codeocean.data_asset.DataAsset | None = None,
+    ) -> tuple[codeocean.computation.Computation, ...]:
+        """
+        All sorting pipeline computations that are still in progress.
+
+        - additionally filtered for computations using the given raw data asset ID
+        - "in progress" defined as `computation.end_status is None`
+        - sorted by ascending creation time
+        - result cached for 1 minute
+        - checks https://codeocean.allenneuraldynamics.org/capsule/8510735/tree by default
+            - can be overridden with a different pipeline ID by
+
+        Examples
+        --------
+        >>> computations = aind_session.ecephys.current_sorting_pipeline_computations
         >>> [c.name for c in computations]   # doctest: +SKIP
         ['Run With Parameters 4689084']
         """
         return aind_session.utils.codeocean_utils.search_computations(
-            capsule_or_pipeline_id=self.SORTING_PIPELINE_ID,
-            attached_data_asset_id=self._session.raw_data_asset.id,
+            capsule_or_pipeline_id=pipeline_id,
+            attached_data_asset_id=aind_session.utils.codeocean_utils.get_normalized_uuid(
+                raw_data_asset_id_or_model
+            ),
             in_progress=True,
             ttl_hash=aind_session.utils.get_ttl_hash(1 * 60),
         )
 
+    @functools.cache
     @staticmethod
-    def get_sorter_name(data_asset_id: str | codeocean.data_asset.DataAsset) -> str:
+    def get_sorter_name(sorted_data_asset_id: str) -> str:
         """
         Get the version of the Kilosort pipeline used to create the sorted data asset.
 
@@ -541,7 +671,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         data_asset_id='b4a7757c-6826-49eb-b3dd-d6cd871c5e7c' (pipeline likely failed) - cannot get sorter name
         """
         source_dir = aind_session.utils.codeocean_utils.get_data_asset_source_dir(
-            aind_session.utils.codeocean_utils.get_normalized_uuid(data_asset_id)
+            aind_session.utils.codeocean_utils.get_normalized_uuid(sorted_data_asset_id)
         )
 
         def _get_sorter_name_from_processing_json(source_dir: upath.UPath) -> str:
@@ -551,7 +681,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             processing_text = processing_path.read_text()
             if '"sorter_name":' not in processing_text:
                 raise KeyError(
-                    f"No 'sorter_name' value found in processing.json for {data_asset_id=}"
+                    f"No 'sorter_name' value found in processing.json for {sorted_data_asset_id=}"
                 )
             processing: dict = json.loads(processing_text)
             if "processing_pipeline" in processing:
@@ -559,7 +689,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             else:
                 assert (
                     "data_processes" in processing
-                ), f"Fix method of getting sorter name: 'data_processes' not in processing.json for {data_asset_id=}"
+                ), f"Fix method of getting sorter name: 'data_processes' not in processing.json for {sorted_data_asset_id=}"
                 data_processes = processing["data_processes"]
             for p in data_processes:
                 if isinstance(p, list):
@@ -574,11 +704,11 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                         break
             else:
                 raise AssertionError(
-                    f"Fix method of getting sorter name: 'sorter_name' is in processing.json, but not in expected location for {data_asset_id=}"
+                    f"Fix method of getting sorter name: 'sorter_name' is in processing.json, but not in expected location for {sorted_data_asset_id=}"
                 )
             assert (
                 "parameters" in sorting
-            ), f"Fix method of getting sorter name: 'parameters' not in 'Spike sorting' data process in processing.json for {data_asset_id=}"
+            ), f"Fix method of getting sorter name: 'parameters' not in 'Spike sorting' data process in processing.json for {sorted_data_asset_id=}"
             if "sorter_name" not in sorting["parameters"]:
                 raise KeyError(
                     "No 'sorter_name' key found in sorting parameters in processing.json"
@@ -606,11 +736,11 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             else:
                 if not json_paths:
                     raise FileNotFoundError(
-                        f"No 'processing.json', 'si_folder.json', or 'sorting.json' files found - asset {data_asset_id} likely contains incomplete data"
+                        f"No 'processing.json', 'si_folder.json', or 'sorting.json' files found - asset {sorted_data_asset_id} likely contains incomplete data"
                     )
                 else:
                     raise KeyError(
-                        f"Fix method of getting sorter name: 'sorter_name' not a value in {set(p.name for p in json_paths)} for {data_asset_id=}"
+                        f"Fix method of getting sorter name: 'sorter_name' not a value in {set(p.name for p in json_paths)} for {sorted_data_asset_id=}"
                     )
 
         def _get_sorter_name_from_params_json(source_dir: upath.UPath) -> str:
@@ -623,13 +753,13 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             params: dict = json.loads(params_text)
             assert (
                 params
-            ), f"Fix method of getting sorter name: {params=} for {data_asset_id=}"
+            ), f"Fix method of getting sorter name: {params=} for {sorted_data_asset_id=}"
             assert (
                 "spikesorting" in params
-            ), f"Fix method of getting sorter name: 'spikesorting' not in {params_path.name} for {data_asset_id=}"
+            ), f"Fix method of getting sorter name: 'spikesorting' not in {params_path.name} for {sorted_data_asset_id=}"
             assert (
                 "sorter_name" in params["spikesorting"]
-            ), f"Fix method of getting sorter name: 'sorter_name' not in 'spikesorting' in {params_path.name} for {data_asset_id=}"
+            ), f"Fix method of getting sorter name: 'sorter_name' not in 'spikesorting' in {params_path.name} for {sorted_data_asset_id=}"
             sorter_name = params["spikesorting"]["sorter_name"]
             logger.debug(f"Found sorter_name key in params.json: {sorter_name}")
             return sorter_name
@@ -641,9 +771,8 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         with contextlib.suppress(FileNotFoundError, KeyError):
             return _get_sorter_name_from_params_json(source_dir)
         raise ValueError(
-            f"Cannot get sorter name: sorting data are incomplete for {data_asset_id=!r} (pipeline likely failed)"
+            f"Cannot get sorter name: sorting data are incomplete for {sorted_data_asset_id=!r} (pipeline likely failed)"
         )
-
 
 
 if __name__ == "__main__":
