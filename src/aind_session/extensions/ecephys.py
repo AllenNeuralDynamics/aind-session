@@ -623,8 +623,8 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             ttl_hash=aind_session.utils.get_ttl_hash(1 * 60),
         )
 
-    @functools.cache
     @staticmethod
+    @functools.cache
     def get_sorter_name(sorted_data_asset_id: str) -> str:
         """
         Get the version of the Kilosort pipeline used to create the sorted data asset.
