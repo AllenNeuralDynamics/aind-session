@@ -27,8 +27,8 @@ def register_namespace(name: str) -> Callable[[type[_NS]], type[_NS]]:
 
 class ExtensionBaseClass:
     """A convenience baseclass with init, repr and a single property: `_session`,
-    which links to the parent `Session` instance. 
-    
+    which links to the parent `Session` instance.
+
     Subclass this baseclass to add a namespace to the Session class, which can
     then be accessed on all new Session instances.
 

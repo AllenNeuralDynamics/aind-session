@@ -35,7 +35,10 @@ def testmod(**testmod_kwargs) -> doctest.TestResults:
 
     """
     _ = testmod_kwargs.setdefault(
-        "optionflags", doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS | doctest.IGNORE_EXCEPTION_DETAIL
+        "optionflags",
+        doctest.NORMALIZE_WHITESPACE
+        | doctest.ELLIPSIS
+        | doctest.IGNORE_EXCEPTION_DETAIL,
     )
     return doctest.testmod(**testmod_kwargs)
 

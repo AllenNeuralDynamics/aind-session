@@ -197,7 +197,6 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         )
         return assets
 
-
     class SortedDataAsset(codeocean.data_asset.DataAsset):
         """An instance of `codeocean.data_asset.DataAsset` with additional property
         getters related to output from the spike sorting pipeline"""
@@ -272,7 +271,6 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             False
             """
             return aind_session.utils.codeocean_utils.is_output_error(self.output)
-
 
     @staticmethod
     def get_sorted_data_asset_model(
