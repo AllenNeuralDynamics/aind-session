@@ -37,7 +37,7 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         pip install -e .
-        pip install pytest 
+        pip install pytest pytest-cov
 
     - name: Test, format, lint
       env:
