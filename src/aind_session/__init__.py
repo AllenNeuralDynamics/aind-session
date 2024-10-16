@@ -12,6 +12,7 @@ import npc_io  # ensures .env files are read
 from aind_session.extension import *
 from aind_session.extensions import *
 from aind_session.session import *
+from aind_session.subject import *
 from aind_session.utils import *
 
 logger = logging.getLogger(__name__)
