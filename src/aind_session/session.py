@@ -9,8 +9,8 @@ import codeocean.data_asset
 import npc_session
 import upath
 
-import aind_session.utils
 import aind_session.subject
+import aind_session.utils
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 if TYPE_CHECKING:
     import aind_session.extensions.ecephys
     import aind_session.extensions.lims
+
 
 class Session:
     """
@@ -348,7 +349,7 @@ class Session:
     def subject(self) -> aind_session.subject.Subject:
         """An object containing all assets, metadata and other sessions
         related to the subject ID associated with this session.
-        
+
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
@@ -358,7 +359,8 @@ class Session:
         'behavior_676909_2023-10-24_15-15-50'
         """
         return aind_session.subject.Subject(self.subject_id)
-    
+
+
 def get_sessions(
     subject_id: int | str,
     date: str | datetime.date | datetime.datetime | None = None,
