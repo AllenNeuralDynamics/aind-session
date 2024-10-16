@@ -82,6 +82,9 @@ def get_docdb_record(
 
     Get a record by data asset ID:
     >>> assert get_docdb_record('16d46411-540a-4122-b47f-8cb2a15d593a')
+    >>> assert get_docdb_record('7c45df9f-7c52-469f-9574-0b337ea838f4') # one external_links 
+    >>> assert get_docdb_record('282063a7-943e-4590-bbb6-507da5df9ef8') # multiple external_links
+    >>> assert get_docdb_record('47308d52-98dc-42fd-995e-1ac58a686fd1') # legacy external_links format
     """
     del ttl_hash
     asset_id = asset_name = None
@@ -92,26 +95,9 @@ def get_docdb_record(
     except ValueError:
         asset_name = str(data_asset_name_or_id)
     if asset_id:
-        # retrieve records by ID
+        # retrieve records by asset ID
         records = get_docdb_api_client().retrieve_docdb_records(
-            filter_query={
-                "$or": [
-                    {
-                        "external_links": {
-                            "$elemMatch": {
-                                "Code Ocean": asset_id  # zero or more {"Code Ocean": asset_id} entries (pre-Sep '24)
-                            }
-                        }
-                    },
-                    {
-                        "external_links.Code Ocean": {
-                            "$in": [
-                                asset_id
-                            ]  # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
-                        }
-                    },
-                ]
-            },
+            filter_query={"external_links.Code Ocean": asset_id},
             sort={"created": 1},
         )
         if len(records) > 0:
