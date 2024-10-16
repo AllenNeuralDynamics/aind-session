@@ -82,7 +82,7 @@ def get_docdb_record(
 
     Get a record by data asset ID:
     >>> assert get_docdb_record('16d46411-540a-4122-b47f-8cb2a15d593a')
-    >>> assert get_docdb_record('7c45df9f-7c52-469f-9574-0b337ea838f4') # one external_links 
+    >>> assert get_docdb_record('7c45df9f-7c52-469f-9574-0b337ea838f4') # one external_links
     >>> assert get_docdb_record('282063a7-943e-4590-bbb6-507da5df9ef8') # multiple external_links
     >>> assert get_docdb_record('47308d52-98dc-42fd-995e-1ac58a686fd1') # legacy external_links format
     """
