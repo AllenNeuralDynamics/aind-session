@@ -341,10 +341,10 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     ) -> bool:
         """The sorting pipeline used the `SortingAnalyzer` introduced in
         `SpikeInterface==0.101.1`.
-        
+
         - checks if results are organized in `.zarr` format
         #TODO use spikeinterface version instead
-        
+
         Examples
         --------
 
