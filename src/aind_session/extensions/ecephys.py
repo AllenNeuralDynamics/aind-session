@@ -274,6 +274,13 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             """
             return aind_session.utils.codeocean_utils.is_output_error(self.output)
 
+        @property
+        def is_sorting_analyzer(self) -> bool:
+            """The sorting pipeline used the `SortingAnalyzer` introduced in
+            `SpikeInterface==0.101.1`. Results are organized in `.zarr` format.
+            """
+            return EcephysExtension.is_sorting_analyzer_asset(self.id)
+
     @staticmethod
     def get_sorted_data_asset_model(
         asset_id: str | codeocean.data_asset.DataAsset,
@@ -325,6 +332,30 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                 f"{asset.name=} determined to be not a sorted data asset based on name starting with '<session-id>_sorted'"
             )
             return False
+
+    @staticmethod
+    @functools.cache
+    def is_sorting_analyzer_asset(
+        asset_id: str,
+    ) -> bool:
+        """The sorting pipeline used the `SortingAnalyzer` introduced in
+        `SpikeInterface==0.101.1`.
+        
+        - checks if results are organized in `.zarr` format
+        #TODO use spikeinterface version instead
+        
+        Examples
+        --------
+
+        >>> aind_session.ecephys.is_sorting_analyzer_asset('fc327291-0689-4e39-bca4-9d0ce56ebd4f')
+        True
+        >>> aind_session.ecephys.is_sorting_analyzer_asset('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
+        False
+        """
+        asset = EcephysExtension.get_sorted_data_asset_model(asset_id)
+        if next(asset.path.glob("*/*.zarr"), None):
+            return True
+        return False
 
     @property
     def sorter(self) -> _SorterNamespace:
