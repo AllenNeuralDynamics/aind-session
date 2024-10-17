@@ -144,7 +144,7 @@ When working in a capsule, the `Session` object can be used to find or verify at
 [Session('ecephys_676909_2023-12-11_14-24-35'), Session('ecephys_676909_2023-12-13_13-43-40')]
 
 # check that particular sessions have their raw data or latest sorted data assets attached:
->>> attached_sessions[0].ecephys.sorter.kilosort2_5.data_assets[-1].name in attached_data_names
+>>> attached_sessions[0].ecephys.sorter.kilosort2_5.sorted_data_assets[-1].name in attached_data_names
 True
 >>> attached_sessions[0].raw_data_asset.name in attached_data_names
 False
