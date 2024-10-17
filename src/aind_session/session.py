@@ -306,6 +306,9 @@ class Session:
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.modalities
         ('behavior', 'behavior_videos', 'ecephys')
+        >>> session = aind_session.Session('behavior_676909_2023-10-24_15-15-50')
+        >>> session.modalities
+        ('behavior',)
         """
         if not self.is_uploaded:
             logger.info(
@@ -316,11 +319,12 @@ class Session:
             d.name for d in self.raw_data_dir.iterdir() if d.is_dir()
         }
         for name in ("ecephys_compressed", "ecephys_clipped"):
-            dir_names.remove(name)
-            logger.debug(
-                f"Returning modality names with {name!r} represented as 'ecephys'"
-            )
-            dir_names.add("ecephys")
+            if name in tuple(dir_names):
+                dir_names.remove(name)
+                logger.debug(
+                    f"Returning modality names with {name!r} represented as 'ecephys'"
+                )
+                dir_names.add("ecephys")
         for term in ("metadata",):
             for name in tuple(dir_names):
                 if term in name:
