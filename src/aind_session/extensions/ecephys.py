@@ -192,7 +192,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         assets = tuple(
             EcephysExtension.get_sorted_data_asset_model(asset)
             for asset in self._session.data_assets
-            if EcephysExtension.is_sorted_data_asset(asset)
+            if EcephysExtension.is_sorted_data_asset(asset.id)
         )
         logger.debug(
             f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}"
@@ -300,7 +300,8 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         )
 
     @staticmethod
-    def is_sorted_data_asset(asset_id: str | codeocean.data_asset.DataAsset) -> bool:
+    @functools.cache
+    def is_sorted_data_asset(asset_id: str) -> bool:
         """Check if the asset is a sorted data asset.
 
         - assumes sorted asset to be named `<session-id>_sorted<unknown-suffix>`
