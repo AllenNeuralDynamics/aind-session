@@ -49,6 +49,8 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
     >>> session.ecephys.sorter.kilosort2_5.sorted_data_assets[0].name
     'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
+    >>> session.ecephys.sorter.names
+    ('kilosort2_5',)
 
     Returned models are enhanced with sorting pipeline-related properties:
     >>> session.ecephys.sorted_data_assets[0].sorted_probes
@@ -382,7 +384,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                         set(
                             executor.map(
                                 EcephysExtension.get_sorter_name,
-                                self._parent.sorted_data_assets,
+                                (asset.id for asset in self._parent.sorted_data_assets),
                             )
                         )
                     )
