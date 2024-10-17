@@ -545,16 +545,16 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
           currently awkward: will update to pass named parameter kwargs in the
           future
             - if needed, you can override the parameters used with a custom list
-        - if `skip_already_sorting` is `True`, a new pipeline run will not
-          triggered the session's raw data asset is already being sorted (returns
-          None)
+        - if `skip_already_sorting` is `True`, a new pipeline run will not be
+          triggered if the session's raw data asset is already being sorted
+          (and this function returns None)
 
         Examples
         --------
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> computation = session.ecephys.run_sorting()       # doctest: +SKIP
 
-        # Supply list of positional arguments (pipeline type and data asset ID are
+        Supply list of positional arguments (pipeline type and data asset ID are
         required)
         >>> override_parameters = ['ecephys_opto', session.raw_data_asset.id]
         >>> session.ecephys.run_sorting(override_parameters) # doctest: +SKIP
