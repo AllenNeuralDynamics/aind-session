@@ -82,7 +82,7 @@ dict_keys(['_id', 'acquisition', 'created', 'data_description', 'describedBy', '
 # Additional functionality in namespace extensions:
 >>> session.ecephys.is_sorted
 True
->>> session.ecephys.sorter.kilosort2_5.data_assets[-1].name
+>>> session.ecephys.sorter.kilosort2_5.sorted_data_assets[-1].name
 'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45'
 
 # Objects refer to the original session, regardless of how they were created:

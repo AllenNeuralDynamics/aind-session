@@ -45,9 +45,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
 
     Access subsets of data assets by sorter name:
-    >>> session.ecephys.sorter.kilosort2_5.data_assets[0].id
+    >>> session.ecephys.sorter.kilosort2_5.sorted_data_assets[0].id
     '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
-    >>> session.ecephys.sorter.kilosort2_5.data_assets[0].name
+    >>> session.ecephys.sorter.kilosort2_5.sorted_data_assets[0].name
     'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
 
     Returned models are enhanced with sorting pipeline-related properties:
@@ -399,23 +399,23 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             self._sorter_name = sorter_name
 
         @property
-        def data_assets(self) -> tuple[EcephysExtension.SortedDataAsset, ...]:
+        def sorted_data_assets(self) -> tuple[EcephysExtension.SortedDataAsset, ...]:
             """All data assets produced using the given SpikeInterface `sorter_name`
             associated with the session (may be empty).
 
             Examples
             --------
             >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
-            >>> session.ecephys.sorted_data_assets[0].id
+            >>> session.ecephys.sorter.kilosort2_5.sorted_data_assets[0].id
             '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
-            >>> session.ecephys.sorted_data_assets[0].name
+            >>> session.ecephys.sorter.kilosort2_5.sorted_data_assets[0].name
             'ecephys_676909_2023-12-13_13-43-40_sorted_2023-12-17_03-16-51'
-            >>> session.ecephys.sorted_data_assets[0].created
+            >>> session.ecephys.sorter.kilosort2_5.sorted_data_assets[0].created
             1702783011
 
             Empty if no sorted data assets are found:
             >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-39')
-            >>> session.ecephys.sorted_data_assets
+            >>> session.ecephys.sorter.kilosort2_5.sorted_data_assets
             ()
             """
             with concurrent.futures.ThreadPoolExecutor() as executor:
