@@ -9,7 +9,7 @@ import os
 import time
 import uuid
 from collections.abc import Iterable
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 import codeocean
 import codeocean.components
@@ -337,12 +337,31 @@ def get_data_asset_search_query(
     return query_text
 
 
+@overload
 def search_data_assets(
     search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
+    as_dict: Literal[False] = False,
+    page_size: int = 100,
+    max_pages: int = 1000,
+    raise_on_page_limit: bool = True,
+) -> tuple[dict[str, Any], ...]:
+    ...
+@overload
+def search_data_assets(
+    search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
+    as_dict: Literal[True] = True,
     page_size: int = 100,
     max_pages: int = 1000,
     raise_on_page_limit: bool = True,
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
+    ...
+def search_data_assets(
+    search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
+    as_dict: bool = False,
+    page_size: int = 100,
+    max_pages: int = 1000,
+    raise_on_page_limit: bool = True,
+) -> tuple[codeocean.data_asset.DataAsset | dict[str, Any], ...]:
     """A wrapper around `codeocean.data_assets.search_data_assets` that makes it
     slightly easier to use.
 
@@ -352,8 +371,9 @@ def search_data_assets(
     - fills in required fields with sensible defaults if not provided:
         - `archived=False`
         - `favorite=False`
-    - raises a `ValueError` if the page limit is reached, unless
-      `raise_on_page_limit=False`
+    - raises a `ValueError` if the page limit is reached, unless `raise_on_page_limit=False`
+    - `as_dict=True` returns json results without converting to dataclasses
+        - this will be much faster for large numbers of results
 
     Examples
     --------
@@ -384,19 +404,27 @@ def search_data_assets(
         f"Fetching data assets results matching search parameters: {updated_params}"
     )
 
-    assets: list[codeocean.data_asset.DataAsset] = []
+    assets: list[codeocean.data_asset.DataAsset| dict[str, Any]] = []
     page = 0
     while page < max_pages:
-        search_results = get_codeocean_client().data_assets.search_data_assets(
-            codeocean.data_asset.DataAssetSearchParams(
-                limit=page_size,
-                offset=page * page_size,
-                **updated_params,
-            )
+        search_params = codeocean.data_asset.DataAssetSearchParams(
+            limit=page_size,
+            offset=page * page_size,
+            **updated_params,
         )
-        assets.extend(search_results.results)
-        if not search_results.has_more:
-            break
+        if not as_dict:
+            search_results = get_codeocean_client().data_assets.search_data_assets(
+                search_params
+            )
+            assets.extend(search_results.results)
+            if not search_results.has_more:
+                break
+        else:
+            search_results = get_codeocean_client().session.post("data_assets/search", json=search_params.to_dict()).json()
+            # requests session already has `raise_for_status` hook
+            assets.extend(search_results['results'])
+            if not search_results['has_more']:
+                break
         page += 1
     else:
         if raise_on_page_limit:
@@ -516,7 +544,6 @@ def search_computations(
         f"{len(computations)} computation models created in {time.time() - t0:.3f}s"
     )
     return computations
-
 
 @functools.cache
 def get_subject_data_assets(
