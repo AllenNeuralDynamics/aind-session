@@ -74,6 +74,14 @@ class Session:
 
     """
 
+    id: str
+    subject_id: str
+    platform: str
+    date: npc_session.DateRecord
+    time: npc_session.TimeRecord
+    datetime: npc_session.DatetimeRecord
+    dt: datetime.datetime
+
     # optional annotations for extensions here to enable IDE type checking,
     # autocompletion, etc.
     ecephys: aind_session.extensions.ecephys.EcephysExtension  # type: ignore [name-defined]
