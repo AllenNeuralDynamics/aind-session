@@ -315,6 +315,9 @@ def get_data_asset_search_query(
     Note: current understanding of the operation of the 'query' field is largely
     undocumented, so the following is based on empirical testing and is not
     exhaustive.
+    
+    - if `name` is over 20 characters long, no results are returned: we will truncate it in this function and raise a
+      warning
     """
     params = {
         k: v for k, v in locals().items() if v not in ("", None)
@@ -330,6 +333,10 @@ def get_data_asset_search_query(
             tags = v if (isinstance(v, Iterable) and not isinstance(v, str)) else (v,)
             for t in tags:
                 append(k, t)
+        if k == "name" and len(v) > 20:
+            v = v[:20]
+            logger.warning(f"Data asset search in CodeOcean with `name` over 20 characters long is broken: truncating to {v!r}")
+            append(k, v)
         else:
             append(k, v)
     query_text = " ".join(query)
