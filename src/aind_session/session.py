@@ -153,9 +153,11 @@ class Session:
         >>> session = aind_session.Session('ecephys_676909_2023-12-13_13-43-40')
         >>> session.data_assets[0].name
         'ecephys_676909_2023-12-13_13-43-40'
+        >>> session = aind_session.Session('SmartSPIM_738819_2024-06-21_13-48-58')
+        >>> assert session.data_assets
         """
-        return aind_session.utils.get_session_data_assets(
-            session_id=self.id,
+        return aind_session.utils.get_data_assets(
+            self.id,
             ttl_hash=aind_session.utils.get_ttl_hash(),
         )
 
