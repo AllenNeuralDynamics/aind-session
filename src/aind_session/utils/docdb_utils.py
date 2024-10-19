@@ -55,6 +55,7 @@ def get_subject_docdb_records(
     )
     return tuple(records)
 
+
 @functools.cache
 def get_docdb_record(
     data_asset_name_or_id: str | uuid.UUID,
@@ -140,6 +141,7 @@ def get_docdb_record(
         ), "records are not sorted by creation time"
     return records[-1]
 
+
 @functools.cache
 def get_codeocean_data_asset_ids_from_docdb(
     partial_name: str,
@@ -147,7 +149,7 @@ def get_codeocean_data_asset_ids_from_docdb(
 ) -> list[str]:
     """Returns all IDs of data assets in Code Ocean from records in DocDB whose `name` field
     contains `partial_name`.
-    
+
     Examples
     --------
     >>> get_codeocean_data_asset_ids_from_docdb('SmartSPIM_738819')[0]
@@ -157,8 +159,8 @@ def get_codeocean_data_asset_ids_from_docdb(
     """
     del ttl_hash
     records = get_docdb_api_client().retrieve_docdb_records(
-        filter_query={"name": {'$regex': partial_name}},
-        projection = {'external_links.Code Ocean': 1, '_id': 0},
+        filter_query={"name": {"$regex": partial_name}},
+        projection={"external_links.Code Ocean": 1, "_id": 0},
         sort={"created": 1},
     )
     logger.debug(
@@ -166,15 +168,18 @@ def get_codeocean_data_asset_ids_from_docdb(
     )
     asset_ids: list[str] = []
     for record in records:
-        links = record['external_links']
-        if isinstance(links, dict): # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
-            ids = links['Code Ocean']
-        elif isinstance(links, list): # [{"Code Ocean": asset_id}, ...] (pre-Sep '24)
-            ids = [link['Code Ocean'] for link in links if 'Code Ocean' in link]
+        links = record["external_links"]
+        if isinstance(links, dict):  # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
+            ids = links["Code Ocean"]
+        elif isinstance(links, list):  # [{"Code Ocean": asset_id}, ...] (pre-Sep '24)
+            ids = [link["Code Ocean"] for link in links if "Code Ocean" in link]
         else:
-            raise NotImplementedError(f"Unexpected format of `external_links` from DocDB: {links}")
+            raise NotImplementedError(
+                f"Unexpected format of `external_links` from DocDB: {links}"
+            )
         asset_ids.extend(ids)
     return asset_ids
+
 
 if __name__ == "__main__":
     from aind_session import testmod

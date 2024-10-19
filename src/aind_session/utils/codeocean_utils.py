@@ -315,7 +315,7 @@ def get_data_asset_search_query(
     Note: current understanding of the operation of the 'query' field is largely
     undocumented, so the following is based on empirical testing and is not
     exhaustive.
-    
+
     - if `name` is over 20 characters long, no results are returned: we will truncate it in this function and raise a
       warning
     """
@@ -335,7 +335,9 @@ def get_data_asset_search_query(
                 append(k, t)
         if k == "name" and len(v) > 20:
             v = v[:20]
-            logger.warning(f"Data asset search in CodeOcean with `name` over 20 characters long is broken: truncating to {v!r}")
+            logger.warning(
+                f"Data asset search in CodeOcean with `name` over 20 characters long is broken: truncating to {v!r}"
+            )
             append(k, v)
         else:
             append(k, v)
@@ -351,8 +353,7 @@ def search_data_assets(
     page_size: int = 100,
     max_pages: int = 1000,
     raise_on_page_limit: bool = True,
-) -> tuple[dict[str, Any], ...]:
-    ...
+) -> tuple[dict[str, Any], ...]: ...
 @overload
 def search_data_assets(
     search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
@@ -360,8 +361,7 @@ def search_data_assets(
     page_size: int = 100,
     max_pages: int = 1000,
     raise_on_page_limit: bool = True,
-) -> tuple[codeocean.data_asset.DataAsset, ...]:
-    ...
+) -> tuple[codeocean.data_asset.DataAsset, ...]: ...
 def search_data_assets(
     search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
     as_dict: bool = False,
@@ -411,7 +411,7 @@ def search_data_assets(
         f"Fetching data assets results matching search parameters: {updated_params}"
     )
 
-    assets: list[codeocean.data_asset.DataAsset| dict[str, Any]] = []
+    assets: list[codeocean.data_asset.DataAsset | dict[str, Any]] = []
     page = 0
     while page < max_pages:
         search_params = codeocean.data_asset.DataAssetSearchParams(
@@ -427,10 +427,14 @@ def search_data_assets(
             if not search_results.has_more:
                 break
         else:
-            search_results = get_codeocean_client().session.post("data_assets/search", json=search_params.to_dict()).json()
+            search_results = (
+                get_codeocean_client()
+                .session.post("data_assets/search", json=search_params.to_dict())
+                .json()
+            )
             # requests session already has `raise_for_status` hook
-            assets.extend(search_results['results'])
-            if not search_results['has_more']:
+            assets.extend(search_results["results"])
+            if not search_results["has_more"]:
                 break
         page += 1
     else:
@@ -552,6 +556,7 @@ def search_computations(
     )
     return computations
 
+
 @functools.cache
 def get_subject_data_assets(
     subject_id: str | int,
@@ -622,7 +627,7 @@ def get_data_assets(
     - `ttl_hash` is used to cache the result for a given number of seconds (time-to-live)
         - default None means cache indefinitely
         - use `aind_utils.get_ttl_hash(seconds)` to generate a new ttl_hash periodically
-        
+
     Examples
     --------
     Use a full session ID:
@@ -639,7 +644,7 @@ def get_data_assets(
     Additional search parameters can be supplied as kwargs:
     >>> filtered_assets = get_data_assets('ecephys_676909_2023-12-13_13-43-40', type='dataset')
     >>> assert len(filtered_assets) > 0
-    
+
     >>> assert get_data_assets('SmartSPIM_738819_2024-06-21_13-48-58')
     """
     del ttl_hash  # only used for functools.cache
@@ -650,10 +655,14 @@ def get_data_assets(
     search_params["query"] = get_data_asset_search_query(name=name_startswith[:20])
     search_params["sort_field"] = codeocean.data_asset.DataAssetSortBy.Created
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
-    
+
     t0 = time.time()
     search_results = search_data_assets(search_params, as_dict=True)
-    assets = [codeocean.data_asset.DataAsset.from_dict(result) for result in search_results if str(result["name"]).startswith(name_startswith)]
+    assets = [
+        codeocean.data_asset.DataAsset.from_dict(result)
+        for result in search_results
+        if str(result["name"]).startswith(name_startswith)
+    ]
     logger.debug(
         f"Got {len(assets)} data asset(s) matching {name_startswith!r} in {time.time() - t0:.3f}s"
     )
