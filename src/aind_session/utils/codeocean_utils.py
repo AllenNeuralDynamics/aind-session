@@ -674,7 +674,9 @@ def get_data_assets(
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
 
     t0 = time.time()
-    search_results: tuple[dict[str, Any], ...] = search_data_assets(search_params, as_dict=True)
+    search_results: tuple[dict[str, Any], ...] = search_data_assets(
+        search_params, as_dict=True
+    )
     assets = [
         codeocean.data_asset.DataAsset.from_dict(result)
         for result in search_results

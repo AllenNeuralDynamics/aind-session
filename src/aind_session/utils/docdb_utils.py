@@ -179,7 +179,7 @@ def extract_codeocean_data_asset_ids_from_docdb_record(
 ) -> tuple[str, ...]:
     """
     Returns the Code Ocean asset ID(s) from a DocDB record's `external_links`.
-    
+
     Examples
     --------
     >>> format_a = {'external_links': {"Code Ocean": ['id0', 'id2']}}
