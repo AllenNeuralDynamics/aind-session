@@ -353,7 +353,7 @@ def search_data_assets(
     page_size: int = 100,
     max_pages: int = 1000,
     raise_on_page_limit: bool = True,
-) -> tuple[dict[str, Any], ...]: ...
+) -> tuple[codeocean.data_asset.DataAsset, ...]: ...
 @overload
 def search_data_assets(
     search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
@@ -361,7 +361,7 @@ def search_data_assets(
     page_size: int = 100,
     max_pages: int = 1000,
     raise_on_page_limit: bool = True,
-) -> tuple[codeocean.data_asset.DataAsset, ...]: ...
+) -> tuple[dict[str, Any], ...]: ...
 def search_data_assets(
     search_params: dict[str, Any] | codeocean.data_asset.DataAssetSearchParams,
     as_dict: bool = False,
