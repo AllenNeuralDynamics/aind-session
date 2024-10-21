@@ -20,6 +20,7 @@ import requests  # type: ignore # to avoid checking types/installing types-reque
 import upath
 
 import aind_session.utils
+import aind_session.utils.docdb_utils
 
 logger = logging.getLogger(__name__)
 
@@ -594,8 +595,6 @@ def get_subject_data_assets(
     Additional search parameters can be supplied as kwargs:
     >>> filtered_assets = get_subject_data_assets(668759, type='dataset')
     """
-    del ttl_hash  # only used for functools.cache
-
     if "query" in search_params:
         raise ValueError(
             "Cannot provide 'query' as a search parameter: a new query will be created using 'subject id' field to search for assets"
@@ -603,12 +602,30 @@ def get_subject_data_assets(
     search_params["query"] = get_data_asset_search_query(subject_id=subject_id)
     search_params["sort_field"] = codeocean.data_asset.DataAssetSortBy.Created
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
+    t0 = time.time()
     assets = search_data_assets(search_params)
-    if not assets and not npc_session.extract_subject(str(subject_id)):
+    docdb_asset_ids = [
+        id_
+        for record in aind_session.utils.docdb_utils.get_subject_docdb_records(
+            subject_id, ttl_hash=ttl_hash
+        )
+        for id_ in aind_session.utils.docdb_utils.extract_codeocean_data_asset_ids_from_docdb_record(
+            record
+        )
+    ]
+    assets = assets + tuple(
+        get_data_asset_model(id_)
+        for id_ in docdb_asset_ids
+        if id_ not in [asset.id for asset in assets]
+    )
+    logger.debug(
+        f"Got {len(assets)} data asset(s) for subject {subject_id!r} in {time.time() - t0:.3f}s"
+    )
+    if not assets and npc_session.extract_subject(str(subject_id)) is None:
         logger.warning(
             f"No assets were found for {subject_id=}, which does not appear to be a Labtracks MID"
         )
-    return assets
+    return sort_by_created(assets)
 
 
 @functools.cache
@@ -657,7 +674,7 @@ def get_data_assets(
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
 
     t0 = time.time()
-    search_results = search_data_assets(search_params, as_dict=True)
+    search_results: tuple[dict[str, Any], ...] = search_data_assets(search_params, as_dict=True)
     assets = [
         codeocean.data_asset.DataAsset.from_dict(result)
         for result in search_results
