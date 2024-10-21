@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import logging
 import uuid
+from collections.abc import Mapping
 from typing import Any
 
 import aind_data_access_api.document_db
@@ -166,19 +167,48 @@ def get_codeocean_data_asset_ids_from_docdb(
     logger.debug(
         f"Retrieved {len(records)} records associated with {partial_name} from DocumentDB"
     )
+    return [
+        id_
+        for record in records
+        for id_ in extract_codeocean_data_asset_ids_from_docdb_record(record)
+    ]
+
+
+def extract_codeocean_data_asset_ids_from_docdb_record(
+    record: Mapping[str, Any],
+) -> tuple[str, ...]:
+    """
+    Returns the Code Ocean asset ID(s) from a DocDB record's `external_links`.
+    
+    Examples
+    --------
+    >>> format_a = {'external_links': {"Code Ocean": ['id0', 'id2']}}
+    >>> extract_codeocean_data_asset_ids_from_docdb_record(format_a)
+    ('id0', 'id2')
+    >>> format_b = {'external_links': [{"Code Ocean": 'id0'}, {"Code Ocean": 'id2'}]}
+    >>> extract_codeocean_data_asset_ids_from_docdb_record(format_b)
+    ('id0', 'id2')
+    """
+    if not isinstance(record, Mapping):
+        raise TypeError(
+            f"`record` must be a DocDB record dict, containing an `external_links` key: got {type(record)}"
+        )
+    if "external_links" not in record:
+        raise ValueError(
+            f"`record` must be a DocDB record dict, containing an `external_links` key: found only {tuple(record.keys())}"
+        )
     asset_ids: list[str] = []
-    for record in records:
-        links = record["external_links"]
-        if isinstance(links, dict):  # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
-            ids = links["Code Ocean"]
-        elif isinstance(links, list):  # [{"Code Ocean": asset_id}, ...] (pre-Sep '24)
-            ids = [link["Code Ocean"] for link in links if "Code Ocean" in link]
-        else:
-            raise NotImplementedError(
-                f"Unexpected format of `external_links` from DocDB: {links}"
-            )
-        asset_ids.extend(ids)
-    return asset_ids
+    links = record["external_links"]
+    if isinstance(links, dict):  # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
+        ids = links["Code Ocean"]
+    elif isinstance(links, list):  # [{"Code Ocean": asset_id}, ...] (pre-Sep '24)
+        ids = [link["Code Ocean"] for link in links if "Code Ocean" in link]
+    else:
+        raise NotImplementedError(
+            f"Unexpected format of `external_links` from DocDB: {links}"
+        )
+    asset_ids.extend(ids)
+    return tuple(asset_ids)
 
 
 if __name__ == "__main__":
