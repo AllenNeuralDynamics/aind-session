@@ -18,6 +18,7 @@ import codeocean.data_asset
 import npc_session
 import requests  # type: ignore # to avoid checking types/installing types-requests
 import upath
+import urllib3
 
 import aind_session.utils
 import aind_session.utils.docdb_utils
@@ -53,12 +54,16 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
         raise KeyError(
             "`CODE_OCEAN_API_TOKEN` not found in environment variables and no `COP_` variable found"
         )
+    domain = os.getenv(
+        key="CODE_OCEAN_DOMAIN",
+        default="https://codeocean.allenneuraldynamics.org",
+    )
     client = codeocean.CodeOcean(
-        domain=os.getenv(
-            key="CODE_OCEAN_DOMAIN",
-            default="https://codeocean.allenneuraldynamics.org",
-        ),
+        domain=domain,
         token=token,
+        retries=urllib3.Retry(
+            total=5, backoff_factor=0.5, status_forcelist=[401, 429, 500, 502, 503, 504],
+        ), # 401 seems to be returned when too many requests are made in a short period of time
     )
     if check_credentials:
         logger.debug(

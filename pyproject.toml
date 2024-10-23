@@ -7,7 +7,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "codeocean>=0.1.5",
+    "codeocean>=0.2.0",
     "npc-io>=0.1.30",
     "npc-session>=0.1.39",
     "aind-data-access-api[docdb]>=0.14.0",

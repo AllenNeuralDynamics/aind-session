@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:199de15134e7e59513e3f603067590d9ad34ee9d9111e81a4c62cc4bf830c933"
+content_hash = "sha256:57e7fa8e234dce5877ac4f4f0c9028d3e5d6a1dacfbe8a4b204ba1ffb491fe01"
 
 [[metadata.targets]]
 requires_python = ">=3.9,<3.12"
@@ -544,7 +544,7 @@ files = [
 
 [[package]]
 name = "codeocean"
-version = "0.1.5"
+version = "0.2.0"
 requires_python = ">=3.9"
 summary = "Code Ocean Python SDK"
 groups = ["default"]
@@ -557,8 +557,8 @@ dependencies = [
     "requests-toolbelt",
 ]
 files = [
-    {file = "codeocean-0.1.5-py3-none-any.whl", hash = "sha256:aed41cac85b0dbf8df145b781b86cc2b3d269d824961b805996dec3963919037"},
-    {file = "codeocean-0.1.5.tar.gz", hash = "sha256:4b314aeca2d0b13c4fde75751935d546e88b644b0068cb60936ba654485472ea"},
+    {file = "codeocean-0.2.0-py3-none-any.whl", hash = "sha256:be68fa0748644fe7d075a3f9b9ef7cbda13a55a8e3970647ea505b02d8323e91"},
+    {file = "codeocean-0.2.0.tar.gz", hash = "sha256:8f8d2a828dbf2f8b5acee7a061d12dad3b5cf14ed63ec68c18b63bc971bb033e"},
 ]
 
 [[package]]
