@@ -30,6 +30,8 @@ class LimsExtension(aind_session.extension.ExtensionBaseClass):
     1386750279
     """
 
+    _base: aind_session.Session
+
     @staticmethod
     def get_session(
         labtracks_mouse_id: str | int, lims_session_id: str | int
@@ -163,7 +165,7 @@ class LimsExtension(aind_session.extension.ExtensionBaseClass):
         >>> session.lims.id
         1386750279
         """
-        return self.get_id(self._session.id)
+        return self.get_id(self._base.id)
 
 
 if __name__ == "__main__":

@@ -59,6 +59,8 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     'kilosort2_5'
     """
 
+    _base: aind_session.Session
+
     DEFAULT_SORTING_PIPELINE_ID: ClassVar[str] = "1f8f159a-7670-47a9-baf1-078905fc9c2e"
     DEFAULT_TRIGGER_CAPSULE_ID: ClassVar[str] = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
 
@@ -78,11 +80,11 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         """
         if (
             path := EcephysExtension.get_clipped_and_compressed_dirs(
-                self._session.raw_data_asset.id
+                self._base.raw_data_asset.id
             )[0]
         ) is None:
             raise AttributeError(
-                f"No 'clipped' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
+                f"No 'clipped' dir found in uploaded raw data for {self._base.id} (checked in root dir and modality subdirectory)"
             )
         return path
 
@@ -103,11 +105,11 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         """
         if (
             path := EcephysExtension.get_clipped_and_compressed_dirs(
-                self._session.raw_data_asset.id
+                self._base.raw_data_asset.id
             )[1]
         ) is None:
             raise AttributeError(
-                f"No 'compressed' dir found in uploaded raw data for {self._session.id} (checked in root dir and modality subdirectory)"
+                f"No 'compressed' dir found in uploaded raw data for {self._base.id} (checked in root dir and modality subdirectory)"
             )
         return path
 
@@ -166,7 +168,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         if self.sorted_data_assets[-1].is_sorting_error:
             return False
         logger.debug(
-            f"The latest sorted data asset for {self._session.id} appears to have been sorted successfully: {self.sorted_data_assets[-1].id}"
+            f"The latest sorted data asset for {self._base.id} appears to have been sorted successfully: {self.sorted_data_assets[-1].id}"
         )
         return True
 
@@ -191,11 +193,11 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         """
         assets = tuple(
             EcephysExtension.get_sorted_data_asset_model(asset)
-            for asset in self._session.data_assets
+            for asset in self._base.data_assets
             if EcephysExtension.is_sorted_data_asset(asset.id)
         )
         logger.debug(
-            f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}"
+            f"Found {len(assets)} sorted data asset{'' if len(assets) == 1 else 's'} for {self._base.id}"
         )
         return assets
 
@@ -371,7 +373,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         >>> session.ecephys.sorter.kilosort4
         SorterExtension(Session('ecephys_676909_2023-12-13_13-43-40'))
         """
-        return EcephysExtension._SorterNamespace(parent=self)
+        return EcephysExtension._SorterNamespace(base=self)
 
     class _SorterNamespace:
         """Namespace for accessing sorting pipeline output for different
@@ -383,17 +385,19 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
           session's sorted data assets
         """
 
+        _base: EcephysExtension
+
         # known sorter names can be added here to aid static typing/autocomplete:
         kilosort2_5: EcephysExtension.SorterExtension
         kilosort4: EcephysExtension.SorterExtension
         spykingcircus2: EcephysExtension.SorterExtension
 
-        def __init__(self, parent: EcephysExtension):
-            self._parent = parent
+        def __init__(self, base: EcephysExtension):
+            self._base = base
 
         def __getattr__(self, sorter_name: str) -> EcephysExtension.SorterExtension:
             return EcephysExtension.SorterExtension(
-                ecephys=self._parent, sorter_name=sorter_name
+                ecephys=self._base, sorter_name=sorter_name
             )
 
         @property
@@ -416,7 +420,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                         set(
                             executor.map(
                                 EcephysExtension.get_sorter_name,
-                                (asset.id for asset in self._parent.sorted_data_assets),
+                                (asset.id for asset in self._base.sorted_data_assets),
                             )
                         )
                     )
@@ -428,7 +432,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         assets created by a specific sorter"""
 
         def __init__(self, ecephys: EcephysExtension, sorter_name: str) -> None:
-            super().__init__(session=ecephys._session)
+            super().__init__(base=ecephys._base)
             self._ecephys = ecephys
             self._sorter_name = sorter_name
 
@@ -468,7 +472,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                 if sorter_name == self._sorter_name:
                     assets.append(asset)
             logger.debug(
-                f"Found {len(assets)} {self._sorter_name} sorted data asset{'' if len(assets) == 1 else 's'} for {self._session.id}"
+                f"Found {len(assets)} {self._sorter_name} sorted data asset{'' if len(assets) == 1 else 's'} for {self._base.id}"
             )
             return tuple(assets)
 
@@ -570,7 +574,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                 parameters[1]
             )
         else:
-            asset = self._session.raw_data_asset
+            asset = self._base.raw_data_asset
             parameters = [pipeline_type, asset.id]
         if skip_already_sorting:
             current_computations = (
@@ -622,7 +626,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         """
         return EcephysExtension.get_current_sorting_pipeline_computations(
             pipeline_id=self.DEFAULT_SORTING_PIPELINE_ID,
-            raw_data_asset_id_or_model=self._session.raw_data_asset.id,
+            raw_data_asset_id_or_model=self._base.raw_data_asset.id,
         )
 
     @staticmethod

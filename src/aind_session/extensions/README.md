@@ -26,10 +26,10 @@
 ...    def add(cls, value) -> int:
 ...        return cls.constant + value
 ...
-...    # Access the underlying Session object with self._session
+...    # Access the underlying Session object with self._base
 ...    @property
 ...    def oldest_data_asset_id(self) -> str:
-...        return min(self._session.data_assets, key=lambda x: x.created).id
+...        return min(self._base.data_assets, key=lambda x: x.created).id
 
 # Create a session object and access the new namespace:
 >>> session = aind_session.Session("ecephys_676909_2023-12-13_13-43-40")

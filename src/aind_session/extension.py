@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable
+from typing import Any, Callable
 
 from typing_extensions import TypeVar
 
@@ -16,26 +16,28 @@ _reserved_namespaces: set[str] = set()
 _NS = TypeVar("_NS")
 
 
-def register_namespace(name: str) -> Callable[[type[_NS]], type[_NS]]:
+def register_namespace(
+    name: str, cls: type = aind_session.session.Session
+) -> Callable[[type[_NS]], type[_NS]]:
     """
-    Decorator for registering custom functionality with a Session object.
+    Decorator for registering custom functionality with Session or Subject objects.
 
     Copied from https://github.com/pola-rs/polars/blob/py-1.5.0/py-polars/polars/api.py#L124-L219
     """
-    return _create_namespace(name, aind_session.session.Session)
+    return _create_namespace(name, cls)
 
 
 class ExtensionBaseClass:
-    """A convenience baseclass with init, repr and a single property: `_session`,
-    which links to the parent `Session` instance.
+    """A convenience baseclass with init, repr and a single property: `_base`,
+    which links to the base instance from which the extension was created.
 
-    Subclass this baseclass to add a namespace to the Session class, which can
-    then be accessed on all new Session instances.
+    Subclass this baseclass to add a namespace to the Session or Subject class, which can
+    then be accessed on all new instances.
 
     Examples
     --------
     Create a custom namespace by subclassing ExtensionBaseClass and registering it with the Session class:
-    >>> @aind_session.register_namespace("my_extension")
+    >>> @aind_session.register_namespace("my_extension", aind_session.Session)
     ... class MyExtension(aind_session.ExtensionBaseClass):
     ...
     ...    constant = 42
@@ -44,10 +46,10 @@ class ExtensionBaseClass:
     ...    def add(cls, value) -> int:
     ...        return cls.constant + value
     ...
-    ...    # Access the underlying session object with self._session
+    ...    # Access the underlying session object with self._base
     ...    @property
     ...    def oldest_data_asset_id(self) -> str:
-    ...        return min(self._session.data_assets, key=lambda x: x.created).id
+    ...        return min(self._base.data_assets, key=lambda x: x.created).id
     ...
 
     Create a session object and access the custom namespace:
@@ -60,11 +62,11 @@ class ExtensionBaseClass:
     '16d46411-540a-4122-b47f-8cb2a15d593a'
     """
 
-    def __init__(self, session: aind_session.session.Session) -> None:
-        self._session = session
+    def __init__(self, base: Any) -> None:
+        self._base = base
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self._session})"
+        return f"{self.__class__.__name__}({self._base})"
 
 
 class _NameSpace:
@@ -86,9 +88,7 @@ class _NameSpace:
         return ns_instance  # type: ignore[return-value]
 
 
-def _create_namespace(
-    name: str, cls: type[aind_session.session.Session]
-) -> Callable[[type[_NS]], type[_NS]]:
+def _create_namespace(name: str, cls: type) -> Callable[[type[_NS]], type[_NS]]:
     """Register custom namespace against the underlying class.
 
     Copied from https://github.com/pola-rs/polars/blob/d0475d7b6502cdc80317dc8795200c615d151a35/py-polars/polars/api.py#L48
