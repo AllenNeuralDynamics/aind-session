@@ -79,8 +79,8 @@ class Session:
     platform: str
     date: npc_session.DateRecord
     time: npc_session.TimeRecord
-    datetime: npc_session.DatetimeRecord
     dt: datetime.datetime
+    datetime: npc_session.DatetimeRecord
 
     # optional annotations for extensions here to enable IDE type checking,
     # autocompletion, etc.
