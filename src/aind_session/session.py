@@ -77,9 +77,9 @@ class Session:
     id: str
     subject_id: str
     platform: str
+    dt: datetime.datetime
     date: npc_session.DateRecord
     time: npc_session.TimeRecord
-    dt: datetime.datetime
     datetime: npc_session.DatetimeRecord
 
     # optional annotations for extensions here to enable IDE type checking,
