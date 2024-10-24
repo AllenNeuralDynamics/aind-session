@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import codeocean.data_asset
 import npc_session
@@ -9,10 +9,15 @@ import npc_session
 import aind_session.session
 import aind_session.utils
 
+if TYPE_CHECKING:
+    import aind_session.extensions.ibl_annotation
+
 logger = logging.getLogger(__name__)
 
 
 class Subject:
+
+    ibl_annotation: aind_session.extensions.ibl_annotation.IBLAnnotationExtension  # type: ignore [name-defined]
 
     def __init__(self, subject_id: str | int) -> None:
         """
