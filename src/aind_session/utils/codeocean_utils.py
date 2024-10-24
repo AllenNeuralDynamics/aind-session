@@ -64,8 +64,8 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
         retries=urllib3.Retry(
             total=5,
             backoff_factor=0.5,
-            status_forcelist=[401, 429, 500, 502, 503, 504],
-        ),  # 401 seems to be returned when too many requests are made in a short period of time
+            status_forcelist=[429, 500, 502, 503, 504],
+        ),
     )
     if check_credentials:
         logger.debug(
