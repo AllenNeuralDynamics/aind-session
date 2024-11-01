@@ -25,9 +25,17 @@ import aind_session.utils.docdb_utils
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_CO_RETRY = urllib3.Retry(
+    total=5,
+    backoff_factor=0.5,
+    status_forcelist=[429, 500, 502, 503, 504],
+)
+
 
 @functools.cache
-def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
+def get_codeocean_client(
+    check_credentials: bool = True, retries: int | urllib3.Retry = DEFAULT_CO_RETRY
+) -> codeocean.CodeOcean:
     """
     Get a CodeOcean client using environment variables.
 
@@ -61,11 +69,7 @@ def get_codeocean_client(check_credentials: bool = True) -> codeocean.CodeOcean:
     client = codeocean.CodeOcean(
         domain=domain,
         token=token,
-        retries=urllib3.Retry(
-            total=5,
-            backoff_factor=0.5,
-            status_forcelist=[429, 500, 502, 503, 504],
-        ),
+        retries=retries,
     )
     if check_credentials:
         logger.debug(
