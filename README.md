@@ -125,43 +125,5 @@ True
 
 ```
 
-When working in a capsule, the `Session` object can be used to find or verify attached data assets:
-```python
->>> import os
-
->>> import aind_session
->>> import codeocean    # codeocean's python sdk for interacting with the api
->>> import upath        # works the same way as pathlib
-
-# find all attached data dirs in the capsule:
->>> capsule_data_dir = upath.UPath('tests/resources/capsule_tree/data') # just '/data' in an actual capsule 
->>> attached_data_names = sorted(d.name for d in capsule_data_dir.iterdir())
->>> attached_data_names
-['ecephys_676909_2023-12-11_14-24-35_sorted_2024-03-29_11-29-39', 'ecephys_676909_2023-12-13_13-43-40', 'ecephys_676909_2023-12-13_13-43-40_sorted_2024-03-01_16-02-45']
-
-# get a list of unique sessions that have data attached to the capsule:
->>> attached_sessions = sorted(set(aind_session.Session(d.name) for d in capsule_data_dir.iterdir()))
->>> attached_sessions
-[Session('ecephys_676909_2023-12-11_14-24-35'), Session('ecephys_676909_2023-12-13_13-43-40')]
-
-# check that particular sessions have their raw data or latest sorted data assets attached:
->>> attached_sessions[0].ecephys.sorter.kilosort2_5.sorted_data_assets[-1].name in attached_data_names
-False
->>> attached_sessions[0].raw_data_asset.name in attached_data_names
-False
-
-# a missing asset could then be attached to the current capsule (this might not be possible or advisable in a "Reproducible run"):
->>> aind_session.get_codeocean_client().capsules.attach_data_assets(            # doctest: +SKIP
-...     capsule_id=os.getenv('OS_CAPSULE_ID'),
-...     attach_params=[
-...         codeocean.data_asset.DataAssetAttachParams(
-...             id=attached_sessions[0].raw_data_asset.id,      
-...         ),
-...     ],
-...     # attach_params can be provided as a dict: the model class is used here to illustrate which parameters are available
-... )
-```
-
-
 # Development
 See instructions in [CONTRIBUTING.md](https://github.com/AllenNeuralDynamics/aind-session/blob/main/CONTRIBUTING.md) and the [original template](https://github.com/AllenInstitute/copier-pdm-npc/blob/main/README.md)
