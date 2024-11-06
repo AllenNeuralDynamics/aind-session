@@ -9,11 +9,7 @@ User-friendly tools for accessing paths, metadata and assets related to AIND ses
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/AllenNeuralDynamics/aind-session/publish.yml?label=CI/CD&logo=github)](https://github.com/AllenNeuralDynamics/aind-session/actions/workflows/publish.yml)
 [![GitHub issues](https://img.shields.io/github/issues/AllenNeuralDynamics/aind-session?logo=github)](https://github.com/AllenNeuralDynamics/aind-session/issues)
 
-## *Under development!*
-Please check this out and make feature requests, but don't rely on the API to remain stable just yet..
-
-
-# Aim
+# Overview
 This package is meant to provide easy access to session information needed for common tasks, in CodeOcean and beyond. 
 
 - when interacting with the CodeOcean API, it uses and returns objects from the [official Python library](https://github.com/codeocean/codeocean-sdk-python) - we will avoid duplicating functionality provided by that package, except to make convenience functions with assumptions baked-in (for example, getting a client with environment variables and a default domain; finding all the assets for a particular session)
@@ -42,8 +38,7 @@ Credentials are required for:
     - in a capsule, this can be found under the `API credentials` secret
     - alternatively, `CODE_OCEAN_API_TOKEN` is the preferred environment variable name 
         - if not found, the first environment variable with a value starting with `COP_` is used (case-insensitive)
-      - the domain name defaults to `https://codeocean.allenneuraldynamics.org`, but
-      can be overridden with a `CODE_OCEAN_DOMAIN` environment variable
+      - the domain name defaults to `https://codeocean.allenneuraldynamics.org`, but can be overridden with a `CODE_OCEAN_DOMAIN` environment variable
 
 For development, environment variables can be provided in a `.env` file in the project root directory or the user's home directory.
 
