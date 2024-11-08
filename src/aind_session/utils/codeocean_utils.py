@@ -647,7 +647,7 @@ def get_subject_data_assets(
         else:
             from_docdb.append(id_)
     assets = assets + tuple(from_docdb)
-    
+
     logger.debug(
         f"Got {len(assets)} data asset(s) for subject {subject_id!r} in {time.time() - t0:.3f}s"
     )
