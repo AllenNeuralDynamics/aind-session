@@ -235,12 +235,19 @@ def sort_by_created(
     ],
 ) -> tuple[codeocean.data_asset.DataAsset, ...]:
     """Sort data assets or computations by ascending creation date. Accepts IDs or models."""
-    return tuple(
-        sorted(
-            (get_codeocean_model(a) for a in ids_or_models),
-            key=lambda asset: asset.created,
-        )
-    )
+    models = []
+    for id_or_model in ids_or_models:
+        try:
+            model = get_codeocean_model(id_or_model)
+        except requests.HTTPError as exc:
+            if exc.response.status_code == 401:
+                logger.info(
+                    f"Skipping {id_or_model} as it is not accessible with current credentials"
+                )
+                continue
+            raise
+        models.append(model)
+    return tuple(sorted(models, key=lambda asset: asset.created))
 
 
 @functools.cache
@@ -624,11 +631,23 @@ def get_subject_data_assets(
             record
         )
     ]
-    assets = assets + tuple(
-        get_data_asset_model(id_)
-        for id_ in docdb_asset_ids
-        if id_ not in [asset.id for asset in assets]
-    )
+    from_docdb = []
+    for id_ in docdb_asset_ids:
+        if id_ in [asset.id for asset in assets]:
+            continue
+        try:
+            get_data_asset_model(id_)
+        except requests.HTTPError as exc:
+            if exc.response.status_code == 401:
+                logger.warning(
+                    f"Not authorized to access data asset ID obtained from DocDB: {subject_id=}, {id_=}"
+                )
+                continue
+            raise
+        else:
+            from_docdb.append(id_)
+    assets = assets + tuple(from_docdb)
+    
     logger.debug(
         f"Got {len(assets)} data asset(s) for subject {subject_id!r} in {time.time() - t0:.3f}s"
     )
