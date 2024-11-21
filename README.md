@@ -10,7 +10,7 @@ User-friendly tools for accessing paths, metadata and assets related to AIND ses
 [![GitHub issues](https://img.shields.io/github/issues/AllenNeuralDynamics/aind-session?logo=github)](https://github.com/AllenNeuralDynamics/aind-session/issues)
 
 # Overview
-This package is meant to provide easy access to session information needed for common tasks, in CodeOcean and beyond. 
+This package is meant to provide easy access to session information needed for common tasks, in CodeOcean and beyond. It joins the CodeOcean API (metadata about data assets, capsules, pipelines) with DocDB (metadata about session, subject, rig) and provides data at the level of a single experiment session, or a single subject (with zero or more sessions).
 
 - when interacting with the CodeOcean API, it uses and returns objects from the [official Python library](https://github.com/codeocean/codeocean-sdk-python) - we will avoid duplicating functionality provided by that package, except to make convenience functions with assumptions baked-in (for example, getting a client with environment variables and a default domain; finding all the assets for a particular session)
 - the core `Session` class should have a minimal set of methods and attributes that are common to sessions from all platforms - it should be fast to initialize and not do unnecessary work
