@@ -7,7 +7,7 @@ import json
 import logging
 import time
 from collections.abc import Container, Iterable, Mapping
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 
 import codeocean.computation
 import codeocean.data_asset
@@ -17,6 +17,7 @@ import upath
 
 import aind_session
 import aind_session.extensions
+from aind_session.extensions.ecephys import EcephysExtension
 import aind_session.utils
 import aind_session.utils.codeocean_utils
 import aind_session.utils.misc_utils
@@ -157,7 +158,7 @@ class NeuroglancerState:
         """Write the Neuroglancer state json to file and return the path.
         
         If no path is provided, a new file name will be generated based on the session ID and current time,
-        and saved in a temporary scratch directory in S3.
+        and saved in a temporary scratch directory in S3 so that it can be added to an internal data asset.
         
         Examples
         --------
@@ -238,12 +239,17 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
     
     Examples
     --------
-    >>> subject = aind_session.Subject("717381")
+    >>> subject = aind_session.Subject(717381)
     >>> subject.ibl_data_converter.ecephys_sessions[0].id
     'ecephys_717381_2024-04-09_11-14-13'
     """
     _base: aind_session.Subject
-    storage_dir = SCRATCH_STORAGE_DIR
+    
+    def __init__(self, base: aind_session.Subject) -> None:
+        self._base = base
+        self.storage_dir = SCRATCH_STORAGE_DIR
+        self.use_data_assets_with_errors = False
+        self.use_data_assets_with_sorting_analyzer = True
 
     DATA_CONVERTER_CAPSULE_ID = "372263e6-d942-4241-ba71-763a1062f2b7"  #! test capsule
     # TODO switch to actual capsule: "d4ba01c4-5665-4163-95d2-e481f4465b86"
@@ -251,16 +257,36 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
 
     @property
     def ecephys_sessions(self) -> tuple[aind_session.Session, ...]:
+        """All ecephys sessions associated with the subject, sorted by ascending session date.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.ibl_data_converter.ecephys_sessions[0].id
+        'ecephys_717381_2024-04-09_11-14-13'
+        """
         return tuple(
             sorted(
-                session
-                for session in self._base.sessions
-                if session.platform == "ecephys"
+                (
+                    session
+                    for session in self._base.sessions
+                    if session.platform == "ecephys"
+                ),
+                key=lambda s: s.date,
             )
         )
 
     @property
     def ecephys_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
+        """All ecephys raw data assets associated with the subject, 0 or 1 per ecephys session,
+        sorted in order of session date.
+
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.ibl_data_converter.ecephys_data_assets[0].name
+        'ecephys_717381_2024-04-09_11-14-13'
+        """
         assets = []
         for session in self.ecephys_sessions:
             if not (asset := session.raw_data_asset):
@@ -270,24 +296,38 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 continue
             assets.append(asset)
             logger.debug(f"Using {asset.name} for annotation")
-        return aind_session.utils.codeocean_utils.sort_by_created(assets)
+        return tuple(assets)
 
     @property
     def sorted_data_assets(
         self,
-    ) -> tuple[aind_session.extensions.ecephys.SortedDataAsset, ...]:
-        assets_all_sessions = []
-
+    ) -> tuple[EcephysExtension.SortedDataAsset, ...]:
+        """All ecephys sorted data assets associated with the subject, 0 or more per ecephys session,
+        sorted by session date, then asset creation date.
+        
+        - can be configured to exclude assets with errors or from the sorting analyzer by setting properties
+          `use_data_assets_with_errors` and `use_data_assets_with_sorting_analyzer` on the namespace instance
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.ibl_data_converter.sorted_data_assets       # doctest: +SKIP
+        ()
+        >>> subject.ibl_data_converter.use_data_assets_with_errors = True
+        >>> subject.ibl_data_converter.sorted_data_assets[0].name
+        'ecephys_717381_2024-04-09_11-14-13_sorted_2024-04-10_22-15-25'
+        """
         def get_session_assets(
             session: aind_session.Session,
-        ) -> tuple[aind_session.extensions.ecephys.SortedDataAsset, ...]:
+        ) -> tuple[EcephysExtension.SortedDataAsset, ...]:
             return tuple(
                 a
                 for a in session.ecephys.sorted_data_assets
-                if not a.is_sorting_error
-                # and not a.is_sorting_analyzer #TODO are both supported?
+                if (self.use_data_assets_with_errors or not a.is_sorting_error)
+                and (self.use_data_assets_with_sorting_analyzer or not a.is_sorting_analyzer)
             )
 
+        assets_all_sessions: list[EcephysExtension.SortedDataAsset] = []
         future_to_session: dict[concurrent.futures.Future, aind_session.Session] = {}
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for session in self._base.sessions:
@@ -300,43 +340,73 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 assets_this_session = future.result()
                 if not assets_this_session:
                     logger.warning(
-                        f"{session.id} has no sorted data (in a non-errored state): cannot use for annotation"
+                        f"{session.id} has no sorted data in a non-errored state: cannot use for annotation"
                     )
                     continue
                 assets_all_sessions.extend(assets_this_session)
-        return aind_session.utils.codeocean_utils.sort_by_created(assets_all_sessions)
-
+        return tuple(assets_all_sessions)
+   
+    @property
+    def smartspim_sessions(self) -> tuple[aind_session.Session, ...]:
+        """All sessions associated with the subject with platform=='SmartSPIM', sorted by ascending session date.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.ibl_data_converter.smartspim_sessions[0].id
+        'SmartSPIM_717381_2024-07-03_10-49-01'
+        """
+        return tuple(
+            sorted(
+                (
+                    session
+                    for session in self._base.sessions
+                    if session.platform == "SmartSPIM"
+                ),
+                key=lambda s: s.date,
+            )
+        )
+        
     @property
     def smartspim_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
+        """All SmartSPIM raw data assets associated with the subject, 0 or 1 per SmartSPIM session (latest only),
+        sorted in order of session date.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.ibl_data_converter.smartspim_data_assets[0].name
+        'SmartSPIM_717381_2024-07-03_10-49-01'
+        """
         assets = []
-        for session in self._base.sessions:
-            if session.platform != "SmartSPIM":
-                continue
+        for session in self.smartspim_sessions:
             if not hasattr(session, "raw_data_asset"):
                 logger.warning(f"{session.id} has no raw data asset")
                 continue
             assets.append(session.raw_data_asset)
             logger.debug(f"Found asset {session.raw_data_asset.name!r}")
-        # if not assets:
-        #     raise AttributeError(f"No SmartSPIM data asset found for {self._base.id}")
-        # if len(assets) > 1:
-        #     logger.info(
-        #         f"Multiple SmartSPIM raw data assets found for {self._base.id}: using most-recent"
-        #     )
-        return aind_session.utils.codeocean_utils.sort_by_created(assets)  # [-1]
+        if not assets:
+            logger.warning(f"No SmartSPIM data asset found for {self._base.id}")
+        if len(assets) > 1:
+            logger.warning(
+                f"Multiple SmartSPIM raw data assets found for {self._base.id}"
+            )
+        return tuple(assets)
 
     @dataclasses.dataclass
     class ManifestRecord:
+        """Dataclass for a single row in the annotation manifest csv."""
         mouseid: str
-        probe_id: str  # can't be found automatically
-        probe_name: str
         sorted_recording: str
         probe_file: str
+        probe_name: str
+        probe_id: str | None = None # can't be found automatically, must be provided by user
         surface_finding: int | None = None  # not currently used
         annotation_format: str = "json"
 
     @property
     def csv_manifest_path(self) -> upath.UPath:
+        """Temporary S3 location for the annotation manifest csv file before being made into an internal data asset."""
         return (
             self.storage_dir
             / "manifests"
