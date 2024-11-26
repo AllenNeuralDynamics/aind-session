@@ -266,14 +266,9 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         'ecephys_717381_2024-04-09_11-14-13'
         """
         return tuple(
-            sorted(
-                (
-                    session
-                    for session in self._base.sessions
-                    if session.platform == "ecephys"
-                ),
-                key=lambda s: s.date,
-            )
+            session
+            for session in self._base.sessions
+            if session.platform == "ecephys"
         )
 
     @property
@@ -357,14 +352,9 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         'SmartSPIM_717381_2024-07-03_10-49-01'
         """
         return tuple(
-            sorted(
-                (
-                    session
-                    for session in self._base.sessions
-                    if session.platform == "SmartSPIM"
-                ),
-                key=lambda s: s.date,
-            )
+            session
+            for session in self._base.sessions
+            if session.platform == "SmartSPIM"
         )
         
     @property
@@ -395,7 +385,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
 
     @dataclasses.dataclass
     class ManifestRecord:
-        """Dataclass for a single row in the annotation manifest csv."""
+        """Dataclass for a single row in the IBL data converter manifest csv."""
         mouseid: str
         sorted_recording: str
         probe_file: str
