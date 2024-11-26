@@ -396,7 +396,14 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
 
     @property
     def csv_manifest_path(self) -> upath.UPath:
-        """Temporary S3 location for the annotation manifest csv file before being made into an internal data asset."""
+        """Temporary S3 location for the annotation manifest csv file before being made into an internal data asset.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.ibl_data_converter.csv_manifest_path
+        UPath('s3://aind-scratch-data/ben.hardcastle/ibl_annotation_temp/manifests/717381_data_converter_manifest.csv')
+        """
         return (
             self.storage_dir
             / "manifests"
@@ -410,6 +417,17 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         skip_existing: bool = True,
         timeout_sec: float = 10,
     ) -> codeocean.data_asset.DataAsset:
+        """Create a CodeOcean data asset from a completed annotation manifest DataFrame.
+        
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> subject = aind_session.Subject(717381)
+        >>> df = pd.DataFrame({'mouseid': [717381], 'sorted_recording': ['recording1'], 'probe_file': ['file1'], 'probe_name': ['probe1'], 'probe_id': ['id1']})
+        >>> asset = subject.ibl_data_converter.create_manifest_asset(df, skip_existing=False)
+        >>> asset.name  # doctest: +SKIP
+        '717381_data_converter_manifest'
+        """
         if skip_existing and (existing := getattr(self, "manifest_data_asset", None)):
             logger.info(
                 f"Manifest asset already exists for {self._base.id}. Use `self.create_manifest_asset(skip_existing=False)` to force creation"
@@ -457,6 +475,16 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
 
     @property
     def manifest_data_asset(self) -> codeocean.data_asset.DataAsset:
+        """Most-recent data asset containing an annotation manifest csv file for the subject, if one exists.
+        Otherwise raises an AttributeError.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> asset = subject.ibl_data_converter.manifest_data_asset
+        >>> asset.name  # doctest: +SKIP
+        '717381_data_converter_manifest'
+        """
         try:
             assets = aind_session.utils.codeocean_utils.get_data_assets(
                 self.csv_manifest_path.stem,
@@ -474,9 +502,24 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             )
         return assets[-1]
 
-    def run_data_converter_capsule(self) -> codeocean.computation.Computation:
+    def run_data_converter_capsule(
+        self,
+        capsule_id: str = DATA_CONVERTER_CAPSULE_ID,
+        additional_assets: Iterable[codeocean.data_asset.DataAsset] = (),
+        parameters: list[str] | None = None,
+        named_parameters: list[codeocean.computation.NamedRunParam] | None = None,
+    ) -> codeocean.computation.Computation:
+        """
+        Run the IBL data converter capsule on CodeOcean with auto-discovered raw data assets, sorted 
+        assets, SmartSPIM data asset, and the manifest csv asset.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> computation = subject.ibl_data_converter.run_data_converter_capsule()
+        """
         run_params = codeocean.computation.RunParams(
-            capsule_id=self.DATA_CONVERTER_CAPSULE_ID,
+            capsule_id=capsule_id,
             data_assets=[
                 codeocean.computation.DataAssetsRunParam(id=asset.id, mount=asset.name)
                 for asset in (
@@ -484,56 +527,33 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                     *self.sorted_data_assets,
                     self.smartspim_data_assets[-1],
                     self.manifest_data_asset,
+                    *additional_assets,
                 )
             ],
-            parameters=[],
-            named_parameters=[],
+            parameters=parameters or [],
+            named_parameters=named_parameters or [],
         )
         logger.debug(f"Running data converter capsule: {run_params.capsule_id}")
         return aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
             run_params
         )
 
-    def get_ecephys_sessions(
-        self,
-        ecephys_data_asset_names: Container[str] = (),
-    ) -> tuple[aind_session.Session, ...]:
-        return tuple(
-            session
-            for session in self._base.sessions
-            if session.platform == "ecephys"
-            and (
-                session.raw_data_asset.name in ecephys_data_asset_names
-                if ecephys_data_asset_names
-                else True
-            )
-        )
-
-    def get_sorted_data_assets(
-        self,
-        sorted_data_asset_names: Iterable[str] = (),
-    ) -> tuple[aind_session.extensions.ecephys.SortedDataAsset, ...]:
-        results = tuple(
-            asset
-            for session in self._base.sessions
-            if session.platform == "ecephys"
-            for asset in session.ecephys.sorter.kilosort2_5.sorted_data_assets
-            if (
-                asset.name in sorted_data_asset_names
-                if sorted_data_asset_names
-                else True
-            )
-        )
-        for name in sorted_data_asset_names:
-            if not any(asset.name == name for asset in results):
-                logger.warning(f"Requested sorted data asset {name} not found")
-        return results
-
     def get_partial_manifest_df(
         self,
         neuroglancer_state_json_name: str | None = None,
         sorted_data_asset_names: Iterable[str] = (),
     ) -> "pd.DataFrame":
+        """
+        Create a partial manifest DataFrame for the IBL data converter from Neuroglancer state json files, for a single subject.
+        Requires 'probe_name' to be updated before use.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> df = subject.ibl_data_converter.get_partial_manifest_df()
+        >>> df.iloc[0]['mouseid']
+        '717381'
+        """
         try:
             import pandas as pd
         except ImportError:
@@ -587,6 +607,16 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
 
     @property
     def state_json_paths(self) -> tuple[upath.UPath, ...]:
+        """
+        Paths to all Neuroglancer state .json files in temporary storage associated with the subject, sorted by file name.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> paths = subject.neuroglancer.state_json_paths
+        >>> paths[0].name  # doctest: +SKIP
+        'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-08-16_23-15-47.json'
+        """
         return tuple(
             sorted(
                 NeuroglancerExtension.storage_dir.glob(f"*{self._base.id}_*.json"),
@@ -598,6 +628,14 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
     def states(
         self,
     ) -> tuple[NeuroglancerState, ...]:
+        """
+        All Neuroglancer state objects associated with the subject, one per state json file, sorted by file name.
+        
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.neuroglancer.states[0]
+        """
         return tuple(NeuroglancerState(p) for p in self.state_json_paths)
 
     # @property
