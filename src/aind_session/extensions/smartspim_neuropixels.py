@@ -412,7 +412,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
 
     def create_manifest_asset(
         self,
-        completed_df: "pd.DataFrame",
+        completed_df: "pd.DataFrame", # noqa: F821
         asset_name: str | None = None,
         skip_existing: bool = True,
         timeout_sec: float = 10,
@@ -542,7 +542,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         self,
         neuroglancer_state_json_name: str | None = None,
         sorted_data_asset_names: Iterable[str] = (),
-    ) -> "pd.DataFrame":
+    ) -> "pd.DataFrame":    # noqa: F821
         """
         Create a partial manifest DataFrame for the IBL data converter from Neuroglancer state json files, for a single subject.
         Requires 'probe_name' to be updated before use.
