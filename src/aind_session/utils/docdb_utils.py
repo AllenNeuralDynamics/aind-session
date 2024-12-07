@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import logging
 import time
-from urllib.error import HTTPError
 import uuid
 from collections.abc import Mapping
 from typing import Any
@@ -13,6 +12,7 @@ import aind_data_access_api.document_db
 import aind_session.utils.codeocean_utils
 
 logger = logging.getLogger(__name__)
+
 
 @functools.cache
 def get_docdb_api_client(**kwargs) -> aind_data_access_api.document_db.MetadataDbClient:
@@ -29,6 +29,7 @@ def get_docdb_api_client(**kwargs) -> aind_data_access_api.document_db.MetadataD
     kwargs.setdefault("collection", "data_assets")
     return aind_data_access_api.document_db.MetadataDbClient(**kwargs)
 
+
 def _retry_on_503(max_retries=5, backoff_factor=0.5):
     def decorator(func):
         @functools.wraps(func)
@@ -37,17 +38,18 @@ def _retry_on_503(max_retries=5, backoff_factor=0.5):
             while retries < max_retries:
                 try:
                     return func(*args, **kwargs)
-                except (HTTPError, ValueError) as exc:
-                    if isinstance(exc, ValueError) and "503" not in str(exc):
-                        raise
-                    if exc.status_code == 503:
-                        logger.warning(
+                except (
+                    Exception
+                ) as exc:  # docdb client currently (Dec 2024) returns ValueError for everything, but might be changed
+                    if "503" in str(exc):
+                        logger.debug(
                             f"DocumentDB client error: {exc}. Retrying ({retries + 1}/{max_retries})"
                         )
                         retries += 1
-                        time.sleep(backoff_factor * 2 ** retries)
+                        time.sleep(backoff_factor * 2**retries)
                     else:
                         raise
+
         return wrapper
 
     return decorator
