@@ -461,7 +461,7 @@ def get_sessions(
         sessions.add(session)
     if not sessions:
         logger.info(f"No sessions found matching {parameters=}")
-    return tuple(sorted(sessions))
+    return tuple(sorted(sessions, key=lambda s: s.dt))
 
 
 if __name__ == "__main__":
