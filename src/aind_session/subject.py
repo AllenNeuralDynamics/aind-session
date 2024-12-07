@@ -16,12 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 class Subject:
-    
+
     # optional annotations for extensions here to enable IDE type checking,
     # autocompletion, etc.
     neuroglancer: aind_session.extensions.smartspim_neuropixels.NeuroglancerExtension
-    ibl_data_converter: aind_session.extensions.smartspim_neuropixels.IBLDataConverterExtension
-    
+    ibl_data_converter: (
+        aind_session.extensions.smartspim_neuropixels.IBLDataConverterExtension
+    )
+
     def __init__(self, subject_id: str | int) -> None:
         """
         Initialize a subject object from a subject ID, or a string containing one.

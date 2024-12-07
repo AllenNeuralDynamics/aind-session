@@ -541,7 +541,8 @@ def search_computations(
         records = [
             record
             for record in records
-            if datetime.datetime.fromtimestamp(record["created"]).date() == npc_session.DateRecord(date)
+            if datetime.datetime.fromtimestamp(record["created"]).date()
+            == npc_session.DateRecord(date)
         ]
     elif start_date is not None or end_date is not None:
         start_date = start_date or datetime.datetime.min
@@ -549,7 +550,9 @@ def search_computations(
         records = [
             record
             for record in records
-            if npc_session.DatetimeRecord(start_date).dt <= datetime.datetime.fromtimestamp(record["created"]) <= npc_session.DatetimeRecord(end_date).dt
+            if npc_session.DatetimeRecord(start_date).dt
+            <= datetime.datetime.fromtimestamp(record["created"])
+            <= npc_session.DatetimeRecord(end_date).dt
         ]
     if attached_data_asset_id is not None:
         records = [
