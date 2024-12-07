@@ -502,7 +502,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         >>> asset.name  # doctest: +SKIP
         '717381_data_converter_manifest'
         >>> next(aind_session.utils.codeocean_utils.get_data_asset_source_dir(asset.id).glob("*.csv")).read_text()
-        'mouseid,sorted_recording,probe_file,probe_name,probe_id\\n\\n717381,recording1,file1,probeA,100\\n\\n'
+        'mouseid,sorted_recording,probe_file,probe_name,probe_id\\n717381,recording1,file1,probeA,100\\n'
         """
         if skip_existing and (existing := getattr(self, "manifest_data_asset", None)):
             logger.info(
@@ -523,7 +523,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                     f"'probe_id' must be provided for each row in the manifest: {row}"
                 )
         logger.debug(f"Writing annotation manifest to {self.csv_manifest_path}")
-        with self.csv_manifest_path.open("w") as f:
+        with self.csv_manifest_path.open("w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=records[0].keys())
             writer.writeheader()
             writer.writerows(records)
