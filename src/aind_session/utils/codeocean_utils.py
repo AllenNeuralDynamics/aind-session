@@ -27,7 +27,7 @@ import aind_session.utils.docdb_utils
 logger = logging.getLogger(__name__)
 
 DEFAULT_CO_RETRY = urllib3.Retry(
-    total=5,
+    total=10,
     backoff_factor=0.5,
     status_forcelist=[429, 500, 502, 503, 504],
 )
