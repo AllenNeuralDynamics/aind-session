@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import concurrent.futures
 import contextlib
 import csv
@@ -7,13 +9,14 @@ import json
 import logging
 import time
 from collections.abc import Iterable, Mapping
-from typing import Any, Self
+from typing import Any
 
 import codeocean.computation
 import codeocean.data_asset
 import npc_io
 import npc_session
 import upath
+from typing_extensions import Self
 
 import aind_session
 import aind_session.extensions
