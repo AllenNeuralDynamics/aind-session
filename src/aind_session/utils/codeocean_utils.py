@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import datetime
 import functools
 import logging
 import os
@@ -477,6 +478,9 @@ def search_computations(
     in_progress: bool | None = None,
     computation_state: codeocean.computation.ComputationState | None = None,
     ttl_hash: int | None = None,
+    date: str | datetime.date | datetime.datetime | None = None,
+    start_date: str | datetime.date | datetime.datetime | None = None,
+    end_date: str | datetime.date | datetime.datetime | None = None,
 ) -> tuple[codeocean.computation.Computation, ...]:
     """
     Search for capsule or pipeline computations with specific attributes.
@@ -514,6 +518,10 @@ def search_computations(
     >>> computations = search_computations(pipeline_id, attached_data_asset_id="83636983-f80d-42d6-a075-09b60c6abd5e")
     """
     del ttl_hash  # only used for functools.cache
+    if date and (start_date or end_date):
+        raise ValueError(
+            f"Cannot filter by specific date and date range at the same time: {date=}, {start_date=}, {end_date=}"
+        )
 
     capsule_or_pipeline_id = get_normalized_uuid(capsule_or_pipeline_id)
 
@@ -528,6 +536,20 @@ def search_computations(
     )
     if name is not None:
         records = [record for record in records if record["name"] == name]
+    if date is not None:
+        records = [
+            record
+            for record in records
+            if datetime.datetime.fromtimestamp(record["created"]).date() == npc_session.DateRecord(date)
+        ]
+    elif start_date is not None or end_date is not None:
+        start_date = start_date or datetime.datetime.min
+        end_date = end_date or datetime.datetime.max
+        records = [
+            record
+            for record in records
+            if npc_session.DatetimeRecord(start_date).dt <= datetime.datetime.fromtimestamp(record["created"]) <= npc_session.DatetimeRecord(end_date).dt
+        ]
     if attached_data_asset_id is not None:
         records = [
             record
