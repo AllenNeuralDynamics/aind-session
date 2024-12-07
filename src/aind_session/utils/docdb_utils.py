@@ -53,7 +53,7 @@ def _retry_on_503(max_retries=5, backoff_factor=0.5):
     return decorator
 
 
-@_retry_on_503
+@_retry_on_503()
 @functools.cache
 def get_subject_docdb_records(
     subject_id: str | int,
@@ -82,7 +82,7 @@ def get_subject_docdb_records(
     return tuple(records)
 
 
-@_retry_on_503
+@_retry_on_503()
 @functools.cache
 def get_docdb_record(
     data_asset_name_or_id: str | uuid.UUID,
@@ -169,7 +169,7 @@ def get_docdb_record(
     return records[-1]
 
 
-@_retry_on_503
+@_retry_on_503()
 @functools.cache
 def get_codeocean_data_asset_ids_from_docdb(
     partial_name: str,
