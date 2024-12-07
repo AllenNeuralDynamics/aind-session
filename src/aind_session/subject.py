@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import codeocean.data_asset
 import npc_session
@@ -9,11 +9,19 @@ import npc_session
 import aind_session.session
 import aind_session.utils
 
+if TYPE_CHECKING:
+    import aind_session.extensions.smartspim_neuropixels
+
 logger = logging.getLogger(__name__)
 
 
 class Subject:
-
+    
+    # optional annotations for extensions here to enable IDE type checking,
+    # autocompletion, etc.
+    neuroglancer: aind_session.extensions.smartspim_neuropixels.NeuroglancerExtension
+    ibl_data_converter: aind_session.extensions.smartspim_neuropixels.IBLDataConverterExtension
+    
     def __init__(self, subject_id: str | int) -> None:
         """
         Initialize a subject object from a subject ID, or a string containing one.
