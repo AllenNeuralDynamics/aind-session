@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import functools
 import logging
+import time
+from urllib.error import HTTPError
 import uuid
 from collections.abc import Mapping
 from typing import Any
@@ -11,7 +13,6 @@ import aind_data_access_api.document_db
 import aind_session.utils.codeocean_utils
 
 logger = logging.getLogger(__name__)
-
 
 @functools.cache
 def get_docdb_api_client(**kwargs) -> aind_data_access_api.document_db.MetadataDbClient:
@@ -28,7 +29,31 @@ def get_docdb_api_client(**kwargs) -> aind_data_access_api.document_db.MetadataD
     kwargs.setdefault("collection", "data_assets")
     return aind_data_access_api.document_db.MetadataDbClient(**kwargs)
 
+def _retry_on_503(max_retries=5, backoff_factor=0.5):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            retries = 0
+            while retries < max_retries:
+                try:
+                    return func(*args, **kwargs)
+                except (HTTPError, ValueError) as exc:
+                    if isinstance(exc, ValueError) and "503" not in str(exc):
+                        raise
+                    if exc.status_code == 503:
+                        logger.warning(
+                            f"DocumentDB client error: {exc}. Retrying ({retries + 1}/{max_retries})"
+                        )
+                        retries += 1
+                        time.sleep(backoff_factor * 2 ** retries)
+                    else:
+                        raise
+        return wrapper
 
+    return decorator
+
+
+@_retry_on_503
 @functools.cache
 def get_subject_docdb_records(
     subject_id: str | int,
@@ -57,6 +82,7 @@ def get_subject_docdb_records(
     return tuple(records)
 
 
+@_retry_on_503
 @functools.cache
 def get_docdb_record(
     data_asset_name_or_id: str | uuid.UUID,
@@ -143,6 +169,7 @@ def get_docdb_record(
     return records[-1]
 
 
+@_retry_on_503
 @functools.cache
 def get_codeocean_data_asset_ids_from_docdb(
     partial_name: str,
