@@ -518,9 +518,9 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             for record in completed_records
         ]
         for row in records:
-            if row["probe_id"] == "" or row["probe_id"] is None:  # int(0) accepted
+            if row["probe_name"] == "" or row["probe_name"] is None:  # int(0) accepted
                 raise ValueError(
-                    f"'probe_id' must be provided for each row in the manifest: {row}"
+                    f"'probe_name' must be provided for each row in the manifest: {row}"
                 )
         logger.debug(f"Writing annotation manifest to {self.csv_manifest_path}")
         with self.csv_manifest_path.open("w", newline="") as f:
