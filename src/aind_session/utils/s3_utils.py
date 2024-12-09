@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import logging
 
+import npc_io
 import upath
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,22 @@ def get_source_dir_by_name(name: str, ttl_hash: int | None = None) -> upath.UPat
             logger.debug(f"Found dir matching {name!r} in {path.parent.as_posix()}")
             return path
     raise FileNotFoundError(f"No dir named {name!r} found in known data buckets on S3")
+
+
+def get_bucket_and_prefix(path: npc_io.PathLike) -> tuple[str, str]:
+    """Extract the bucket and prefix from an S3 path.
+
+    Examples
+    --------
+    >>> get_bucket_and_prefix("s3://aind-scratch-data/ibl_annotation_temp/manifests/717381/717381_data_converter_manifest.csv")
+    ('aind-scratch-data', 'ibl_annotation_temp/manifests/717381')
+    """
+    path = npc_io.from_pathlike(path)
+    if path.protocol != "s3":
+        raise ValueError(f"Expected S3 path, got {path}")
+    bucket = path.as_posix().split("/")[2]
+    prefix = "/".join(path.as_posix().split(bucket)[1].split("/")[:-1]).strip("/")
+    return bucket, prefix
 
 
 if __name__ == "__main__":

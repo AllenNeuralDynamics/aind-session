@@ -22,6 +22,7 @@ import aind_session
 import aind_session.extensions
 import aind_session.utils
 import aind_session.utils.codeocean_utils
+import aind_session.utils.s3_utils
 import aind_session.utils.misc_utils
 from aind_session.extensions.ecephys import EcephysExtension
 
@@ -210,14 +211,15 @@ class NeuroglancerState:
         1
         """
         path = self.write()
+        bucket, prefix = aind_session.utils.s3_utils.get_bucket_and_prefix(path)
         asset_params = codeocean.data_asset.DataAssetParams(
             name=path.stem,
             mount=path.stem,
             tags=["neuroglancer", "ecephys", "annotation", self.session.subject.id],
             source=codeocean.data_asset.Source(
                 aws=codeocean.data_asset.AWSS3Source(
-                    bucket=(bucket := path.as_posix().split("/")[2]),
-                    prefix=(path.as_posix().split(bucket)[1].strip("/")),
+                    bucket=bucket,
+                    prefix=prefix,
                     keep_on_external_storage=False,
                     public=False,
                 )
@@ -537,20 +539,15 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 f"Failed to write annotation manifest to {self.csv_manifest_path}: "
                 f"file not found after {timeout_sec} seconds"
             )
+        bucket, prefix = aind_session.utils.s3_utils.get_bucket_and_prefix(self.csv_manifest_path)
         asset_params = codeocean.data_asset.DataAssetParams(
             name=asset_name or self.csv_manifest_path.stem,
             mount=asset_name or self.csv_manifest_path.stem,
             tags=["ibl", "annotation", "manifest", self._base.id],
             source=codeocean.data_asset.Source(
                 aws=codeocean.data_asset.AWSS3Source(
-                    bucket=(bucket := self.csv_manifest_path.as_posix().split("/")[2]),
-                    prefix=(
-                        "/".join(
-                            self.csv_manifest_path.as_posix()
-                            .split(bucket)[1]
-                            .split("/")[:-1]
-                        ).strip("/")
-                    ),
+                    bucket=bucket,
+                    prefix=prefix,
                     keep_on_external_storage=False,
                     public=False,
                 )
