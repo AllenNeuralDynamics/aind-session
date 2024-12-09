@@ -483,7 +483,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         --------
         >>> subject = aind_session.Subject(717381)
         >>> subject.ibl_data_converter.csv_manifest_path.as_posix()
-        's3://aind-scratch-data/ben.hardcastle/ibl_annotation_temp/manifests/717381/717381_data_converter_manifest.csv'
+        's3://aind-scratch-data/aind-session/manifests/717381/717381_data_converter_manifest.csv'
         """
         return (
             self.storage_dir
