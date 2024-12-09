@@ -22,15 +22,15 @@ import aind_session
 import aind_session.extensions
 import aind_session.utils
 import aind_session.utils.codeocean_utils
-import aind_session.utils.s3_utils
 import aind_session.utils.misc_utils
+import aind_session.utils.s3_utils
 from aind_session.extensions.ecephys import EcephysExtension
 
 logger = logging.getLogger(__name__)
 
 SCRATCH_STORAGE_DIR = upath.UPath(
-    "s3://aind-scratch-data/ben.hardcastle/ibl_annotation_temp"
-)  #! temp location for testing
+    "s3://aind-scratch-data/aind-session"
+)
 
 
 class NeuroglancerState:
@@ -174,9 +174,11 @@ class NeuroglancerState:
         if path is not None:
             path = npc_io.from_pathlike(path)
         else:
+            name = NeuroglancerState.get_new_file_name(self.session.id)
             path = (
                 self.session.subject.neuroglancer.state_json_dir
-                / NeuroglancerState.get_new_file_name(self.session.id)
+                / name.rsplit(".")[0] # subfolder ensures 1 file per folder, for creating dedicated data assets
+                / name
             )
         logger.debug(f"Writing Neuroglancer annotation file to {path.as_posix()}")
         path.write_text(json.dumps(self.content, indent=2))
@@ -448,7 +450,9 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             neuroglancer_state = NeuroglancerState(latest)
         else:
             neuroglancer_state = NeuroglancerState(
-                ng.state_json_dir / f"{neuroglancer_state_json_name}.json"
+                ng.state_json_dir
+                / neuroglancer_state_json_name
+                / f"{neuroglancer_state_json_name}.json"
             )
 
         if isinstance(sorted_data_asset_names, str):
@@ -541,7 +545,9 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 f"Failed to write annotation manifest to {self.csv_manifest_path}: "
                 f"file not found after {timeout_sec} seconds"
             )
-        bucket, prefix = aind_session.utils.s3_utils.get_bucket_and_prefix(self.csv_manifest_path)
+        bucket, prefix = aind_session.utils.s3_utils.get_bucket_and_prefix(
+            self.csv_manifest_path
+        )
         asset_params = codeocean.data_asset.DataAssetParams(
             name=asset_name or self.csv_manifest_path.stem,
             mount=asset_name or self.csv_manifest_path.stem,
@@ -638,10 +644,8 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
 
     _base: aind_session.Subject
 
-    @property
-    def state_json_dir(self) -> upath.UPath:
-        return SCRATCH_STORAGE_DIR / "neuroglancer_states" / self._base.id
-    
+    state_json_dir: upath.UPath = SCRATCH_STORAGE_DIR / "neuroglancer_states"
+
     @property
     def state_json_paths(self) -> tuple[upath.UPath, ...]:
         """
@@ -656,7 +660,7 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
         """
         return tuple(
             sorted(
-                self.state_json_dir.glob(f"*{self._base.id}_*.json"),
+                self.state_json_dir.rglob(f"*_{self._base.id}_*.json"),
                 key=lambda p: p.stem,
             )
         )
