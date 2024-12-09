@@ -234,8 +234,8 @@ class NeuroglancerState:
             asset_params
         )
         logger.debug(f"Waiting for new asset {asset.name} to be ready")
-        updated_asset = aind_session.utils.codeocean_utils.get_codeocean_client().data_assets.wait_until_ready(
-            asset,
+        updated_asset = aind_session.utils.codeocean_utils.wait_until_ready(
+            data_asset=asset,
             timeout=60,
         )
         logger.debug(f"Asset {updated_asset.name} is ready")
@@ -566,7 +566,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             asset_params
         )
         logger.debug(f"Waiting for new asset {asset.name} to be ready")
-        updated_asset = aind_session.utils.codeocean_utils.get_codeocean_client().data_assets.wait_until_ready(
+        updated_asset = aind_session.utils.codeocean_utils.wait_until_ready(
             data_asset=asset,
             timeout=60,
         )
