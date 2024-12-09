@@ -683,14 +683,16 @@ def get_subject_data_assets(
     search_params["sort_field"] = codeocean.data_asset.DataAssetSortBy.Created
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
     t0 = time.time()
+    # get assets from CodeOcean:
     assets = search_data_assets(search_params)
+    # get assets from DocDB:
+    docdb_records = aind_session.utils.docdb_utils.get_subject_docdb_records(
+        subject_id, ttl_hash=ttl_hash
+    )
     docdb_asset_ids = [
         id_
-        for record in aind_session.utils.docdb_utils.get_subject_docdb_records(
-            subject_id, ttl_hash=ttl_hash
-        )
         for id_ in aind_session.utils.docdb_utils.extract_codeocean_data_asset_ids_from_docdb_record(
-            record
+            docdb_records
         )
     ]
     from_docdb = []
