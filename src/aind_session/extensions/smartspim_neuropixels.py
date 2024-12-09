@@ -175,7 +175,7 @@ class NeuroglancerState:
             path = npc_io.from_pathlike(path)
         else:
             path = (
-                NeuroglancerExtension.storage_dir
+                self.session.subject.neuroglancer.state_json_dir
                 / NeuroglancerState.get_new_file_name(self.session.id)
             )
         logger.debug(f"Writing Neuroglancer annotation file to {path.as_posix()}")
@@ -209,6 +209,8 @@ class NeuroglancerState:
         ['neuroglancer', 'ecephys', 'annotation', '717381']
         >>> asset.files
         1
+        >>> next(aind_session.utils.codeocean_utils.get_data_asset_source_dir(asset.id).glob("*")).name  # doctest: +SKIP
+        'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-08-16_23-15-47.json'
         """
         path = self.write()
         bucket, prefix = aind_session.utils.s3_utils.get_bucket_and_prefix(path)
@@ -231,7 +233,7 @@ class NeuroglancerState:
         )
         logger.debug(f"Waiting for new asset {asset.name} to be ready")
         updated_asset = aind_session.utils.codeocean_utils.get_codeocean_client().data_assets.wait_until_ready(
-            data_asset=asset,
+            asset,
             timeout=60,
         )
         logger.debug(f"Asset {updated_asset.name} is ready")
@@ -437,7 +439,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 latest = ng.state_json_paths[-1]
             except IndexError:
                 raise FileNotFoundError(
-                    f"No Neuroglancer annotation json found for {self._base.id} in {ng.storage_dir}"
+                    f"No Neuroglancer annotation json found for {self._base.id} in {ng.state_json_dir}"
                 )
             logger.debug(
                 f"Using most-recent Neuroglancer annotation file: {latest.as_posix()}"
@@ -446,7 +448,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             neuroglancer_state = NeuroglancerState(latest)
         else:
             neuroglancer_state = NeuroglancerState(
-                ng.storage_dir / f"{neuroglancer_state_json_name}.json"
+                ng.state_json_dir / f"{neuroglancer_state_json_name}.json"
             )
 
         if isinstance(sorted_data_asset_names, str):
@@ -634,9 +636,12 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
 @aind_session.register_namespace(name="neuroglancer", cls=aind_session.Subject)
 class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
 
-    storage_dir = SCRATCH_STORAGE_DIR / "neuroglancer_states"
     _base: aind_session.Subject
 
+    @property
+    def state_json_dir(self) -> upath.UPath:
+        return SCRATCH_STORAGE_DIR / "neuroglancer_states" / self._base.id
+    
     @property
     def state_json_paths(self) -> tuple[upath.UPath, ...]:
         """
@@ -651,7 +656,7 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
         """
         return tuple(
             sorted(
-                NeuroglancerExtension.storage_dir.glob(f"*{self._base.id}_*.json"),
+                self.state_json_dir.glob(f"*{self._base.id}_*.json"),
                 key=lambda p: p.stem,
             )
         )
