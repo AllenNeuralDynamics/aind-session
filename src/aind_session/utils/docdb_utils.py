@@ -55,9 +55,10 @@ def _retry_on_503(max_retries=5, backoff_factor=0.5):
                         raise
             else:
                 logger.error(
-                    f"DocumentDB client encountered error and max retries exceeded"
+                    "DocumentDB client encountered error and max retries exceeded"
                 )
                 raise last_exception
+
         return wrapper
 
     return decorator

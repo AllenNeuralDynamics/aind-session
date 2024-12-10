@@ -322,20 +322,26 @@ def get_data_asset_source_dir(
         )
     return get_dir_from_known_s3_locations(asset)
 
-def wait_until_ready(data_asset: str | codeocean.data_asset.DataAsset, check_files: bool = True, timeout: float | None = 60, **kwargs) -> codeocean.data_asset.DataAsset:
+
+def wait_until_ready(
+    data_asset: str | codeocean.data_asset.DataAsset,
+    check_files: bool = True,
+    timeout: float | None = 60,
+    **kwargs,
+) -> codeocean.data_asset.DataAsset:
     """A wrapper around `codeocean.data_asset.DataAssets.wait_until_ready` that optionally waits for files to appear in the asset's source dir.
-    
+
     When a new data asset is created, it may take some time for the files to be visible in the 'source_bucket' specified in the asset's metadata.
     This function will wait for the asset to be 'Ready' and, if `check_files=True`, will also wait for at least one file to appear in the source directory.
-    
+
     - extra kwargs are passed to `codeocean.data_asset.DataAssets.wait_until_ready`
     - `timeout` is in seconds
-    
+
     Examples
     --------
     >>> updated_asset = wait_until_ready('16d46411-540a-4122-b47f-8cb2a15d593a', check_files=True)
     """
-    asset =  get_data_asset_model(data_asset)
+    asset = get_data_asset_model(data_asset)
     t0 = time.time()
     logger.debug(f"Waiting for asset {asset.name} to be ready")
     updated_asset = get_codeocean_client().data_assets.wait_until_ready(
@@ -350,14 +356,17 @@ def wait_until_ready(data_asset: str | codeocean.data_asset.DataAsset, check_fil
         while timeout is None or time.time() - t0 < timeout:
             if source_dir.exists() and any(source_dir.glob("*")):
                 break
-            logger.debug(f"No files found in {source_dir}: waiting {polling_interval} s before checking again")
+            logger.debug(
+                f"No files found in {source_dir}: waiting {polling_interval} s before checking again"
+            )
             time.sleep(polling_interval)
         else:
             raise TimeoutError(
                 f"Failed to find any files in {source_dir} after {timeout} s"
             )
     logger.debug(f"Asset {asset.name} is ready: returning updated asset")
-    return get_data_asset_model(updated_asset.id) 
+    return get_data_asset_model(updated_asset.id)
+
 
 def get_data_asset_search_query(
     name: str | None = None,

@@ -28,9 +28,7 @@ from aind_session.extensions.ecephys import EcephysExtension
 
 logger = logging.getLogger(__name__)
 
-SCRATCH_STORAGE_DIR = upath.UPath(
-    "s3://aind-scratch-data/aind-session"
-)
+SCRATCH_STORAGE_DIR = upath.UPath("s3://aind-scratch-data/aind-session")
 
 
 class NeuroglancerState:
@@ -177,7 +175,9 @@ class NeuroglancerState:
             name = NeuroglancerState.get_new_file_name(self.session.id)
             path = (
                 self.session.subject.neuroglancer.state_json_dir
-                / name.rsplit(".")[0] # subfolder ensures 1 file per folder, for creating dedicated data assets
+                / name.rsplit(".")[
+                    0
+                ]  # subfolder ensures 1 file per folder, for creating dedicated data assets
                 / name
             )
         logger.debug(f"Writing Neuroglancer annotation file to {path.as_posix()}")
