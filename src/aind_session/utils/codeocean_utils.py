@@ -689,27 +689,29 @@ def get_subject_data_assets(
     docdb_records = aind_session.utils.docdb_utils.get_subject_docdb_records(
         subject_id, ttl_hash=ttl_hash
     )
-    docdb_asset_ids = [
-        id_
-        for id_ in aind_session.utils.docdb_utils.extract_codeocean_data_asset_ids_from_docdb_record(
-            docdb_records
-        )
-    ]
     from_docdb = []
-    for id_ in docdb_asset_ids:
-        if id_ in [asset.id for asset in assets]:
-            continue
-        try:
-            get_data_asset_model(id_)
-        except requests.HTTPError as exc:
-            if exc.response.status_code == 401:
-                logger.warning(
-                    f"Not authorized to access data asset ID obtained from DocDB: {subject_id=}, {id_=}"
-                )
+    if docdb_records:
+        docdb_asset_ids = [
+            id_
+            for record in docdb_records
+            for id_ in aind_session.utils.docdb_utils.extract_codeocean_data_asset_ids_from_docdb_record(
+                record
+            )
+        ]
+        for id_ in docdb_asset_ids:
+            if id_ in [asset.id for asset in assets]:
                 continue
-            raise
-        else:
-            from_docdb.append(id_)
+            try:
+                get_data_asset_model(id_)
+            except requests.HTTPError as exc:
+                if exc.response.status_code == 401:
+                    logger.warning(
+                        f"Not authorized to access data asset ID obtained from DocDB: {subject_id=}, {id_=}"
+                    )
+                    continue
+                raise
+            else:
+                from_docdb.append(id_)
     assets = assets + tuple(from_docdb)
 
     logger.debug(
