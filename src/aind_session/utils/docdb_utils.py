@@ -46,13 +46,18 @@ def _retry_on_503(max_retries=5, backoff_factor=0.5):
                 ) as exc:  # docdb client currently (Dec 2024) returns ValueError for everything, but might be changed
                     if "503" in str(exc):
                         logger.debug(
-                            f"DocumentDB client error: {exc}. Retrying ({retries + 1}/{max_retries})"
+                            f"DocumentDB client encountered error: {exc}. Retrying ({retries + 1}/{max_retries})"
                         )
                         retries += 1
+                        last_exception = exc
                         time.sleep(backoff_factor * 2**retries)
                     else:
                         raise
-
+            else:
+                logger.error(
+                    f"DocumentDB client encountered error and max retries exceeded"
+                )
+                raise last_exception
         return wrapper
 
     return decorator
