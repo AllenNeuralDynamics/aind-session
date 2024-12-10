@@ -27,7 +27,10 @@ def get_docdb_api_client(**kwargs) -> aind_data_access_api.document_db.MetadataD
     kwargs.setdefault("host", "api.allenneuraldynamics.org")
     kwargs.setdefault("database", "metadata_index")
     kwargs.setdefault("collection", "data_assets")
-    return aind_data_access_api.document_db.MetadataDbClient(**kwargs)
+    t0 = time.time()
+    client = aind_data_access_api.document_db.MetadataDbClient(**kwargs)
+    logger.debug(f"Initialized DocumentDB client in {time.time() - t0:.2f} s")
+    return client
 
 
 def _retry_on_503(max_retries=5, backoff_factor=0.5):
@@ -72,6 +75,7 @@ def get_subject_docdb_records(
     dict_keys(['_id', 'acquisition', 'created', 'data_description', 'describedBy', 'external_links', 'instrument', 'last_modified', 'location', 'metadata_status', 'name', 'procedures', 'processing', 'rig', 'schema_version', 'session', 'subject'])
     """
     del ttl_hash
+    t0 = time.time()
     records = get_docdb_api_client().retrieve_docdb_records(
         filter_query={
             "subject.subject_id": str(subject_id),
@@ -79,7 +83,7 @@ def get_subject_docdb_records(
         sort={"created": 1},
     )
     logger.debug(
-        f"Retrieved {len(records)} records for subject {subject_id} from DocumentDB"
+        f"Retrieved {len(records)} records for subject {subject_id} from DocumentDB in {time.time() - t0:.2f} s"
     )
     return tuple(records)
 
