@@ -239,7 +239,7 @@ def extract_codeocean_data_asset_ids_from_docdb_record(
     asset_ids: list[str] = []
     links = record["external_links"]
     if isinstance(links, dict):  # {"Code Ocean": [asset_id, ...]} (post-Sep '24)
-        ids = links["Code Ocean"]
+        ids = links.get("Code Ocean", [])
     elif isinstance(links, list):  # [{"Code Ocean": asset_id}, ...] (pre-Sep '24)
         ids = [link["Code Ocean"] for link in links if "Code Ocean" in link]
     else:
