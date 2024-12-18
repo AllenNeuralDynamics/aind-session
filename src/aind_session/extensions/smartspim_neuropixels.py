@@ -8,6 +8,7 @@ import datetime
 import json
 import logging
 import time
+import zoneinfo
 from collections.abc import Iterable, Mapping
 from typing import Any
 
@@ -99,6 +100,26 @@ class NeuroglancerState:
         return ()
 
     @property
+    def image_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
+        """Data assets with image source session ID in their name
+        
+        Examples
+        --------
+        >>> NeuroglancerState("tests/resources/example_neuroglancer_state.json").image_data_assets[0].name
+        'SmartSPIM_717381_2024-07-03_10-49-01_stitched_2024-08-16_23-15-47'
+        """
+        assets = []
+        for source in self.image_sources:
+            session_id = next(p for p in reversed(source.split("/")) if p.startswith("SmartSPIM_"))
+            results = aind_session.utils.codeocean_utils.get_data_assets(
+                name_startswith=session_id,
+                ttl_hash=aind_session.utils.misc_utils.get_ttl_hash(seconds=1),
+            )
+            if results:
+                assets.extend(results)
+        return aind_session.utils.codeocean_utils.sort_by_created(assets)
+
+    @property
     def session(self) -> aind_session.Session:
         """The session associated with the Neuroglancer state json, extracted from the image source urls.
 
@@ -152,7 +173,8 @@ class NeuroglancerState:
         >>> NeuroglancerState.get_new_file_name('SmartSPIM_717381_2024-07-03_10-49-01') # doctest: +SKIP
         'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-08-16_23-15-47.json'
         """
-        return f"{session_id}_neuroglancer-state_{datetime.datetime.now():%Y-%m-%d_%H-%M-%S}.json"
+        # name is coupled with NeuroglancerExtension.state_json_data_assets
+        return f"{session_id}_neuroglancer-state_{datetime.datetime.now(tz=zoneinfo.ZoneInfo('US/Pacific')):%Y-%m-%d_%H-%M-%S}.json"
 
     def write(
         self, path: npc_io.PathLike | None = None, timeout_sec: float = 10
@@ -195,7 +217,7 @@ class NeuroglancerState:
         logger.debug(f"Neuroglancer annotation file written to {path.as_posix()}")
         return path
 
-    def create_data_asset(self) -> codeocean.data_asset.DataAsset:
+    def create_data_asset(self, path: npc_io.PathLike | None = None) -> codeocean.data_asset.DataAsset:
         """Create a CodeOcean data asset from the Neuroglancer state json file.
 
         - name and tags are created automatically based on the SmartSPIM session ID
@@ -214,7 +236,10 @@ class NeuroglancerState:
         >>> next(aind_session.utils.codeocean_utils.get_data_asset_source_dir(asset.id).glob("*")).name  # doctest: +SKIP
         'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-08-16_23-15-47.json'
         """
-        path = self.write()
+        if path is None:
+            path = self.write()
+        else:
+            path = npc_io.from_pathlike(path)
         bucket, prefix = aind_session.utils.s3_utils.get_bucket_and_prefix(path)
         asset_params = codeocean.data_asset.DataAssetParams(
             name=path.stem,
@@ -244,14 +269,6 @@ class NeuroglancerState:
 
 @aind_session.register_namespace(name="ibl_data_converter", cls=aind_session.Subject)
 class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
-    """
-
-    Examples
-    --------
-    >>> subject = aind_session.Subject(717381)
-    >>> subject.ibl_data_converter.ecephys_sessions[0].id
-    'ecephys_717381_2024-04-09_11-14-13'
-    """
 
     _base: aind_session.Subject
 
@@ -261,9 +278,10 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         self.use_data_assets_with_errors = False
         self.use_data_assets_with_sorting_analyzer = True
 
-    DATA_CONVERTER_CAPSULE_ID = "372263e6-d942-4241-ba71-763a1062f2b7"  #! test capsule
-    # TODO switch to actual capsule: "d4ba01c4-5665-4163-95d2-e481f4465b86"
-    """https://codeocean.allenneuraldynamics.org/capsule/1376129/tree"""
+    DATA_CONVERTER_CAPSULE_ID = "9fe42995-ffff-40ff-9c4c-c8206b8aacb5"
+    # test capsule: "372263e6-d942-4241-ba71-763a1062f2b7"
+    # actual capsule: "9fe42995-ffff-40ff-9c4c-c8206b8aacb5"
+    """https://codeocean.allenneuraldynamics.org/capsule/8363069/tree"""
 
     @property
     def ecephys_sessions(self) -> tuple[aind_session.Session, ...]:
@@ -300,6 +318,37 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             assets.append(asset)
             logger.debug(f"Using {asset.name} for annotation")
         return tuple(assets)
+
+    @property
+    def surface_recording_names(self) -> dict[str, str]:
+        """A mapping of ecephys session names to corresponding surface recording names.
+        
+            - surface recordings are assumed to be the second raw ecephys data asset on a given day for a particular subject
+            - not all ecpehys sessions have a surface recording (in which case they will not be in the mapping)
+            
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.ibl_data_converter.surface_recording_names
+        {'ecephys_717381_2024-04-09_11-14-13': 'ecephys_717381_2024-04-09_11-44-16', 'ecephys_717381_2024-04-10_16-29-12': 'ecephys_717381_2024-04-10_16-51-20'}
+        """
+        date_to_session_names: dict[str, list[str]] = {}
+        for asset in self.ecephys_data_assets:
+            session = aind_session.Session(asset.name)
+            date_to_session_names.setdefault(session.date, []).append(asset.name)
+        first_to_second_recording = {}
+        for session_names in date_to_session_names.values():
+            if len(session_names) == 1:
+                logger.debug(f"Only one recording found ({session_names[0]}): no option for surface recording available")
+                continue
+            session_names = sorted(session_names)
+            first, second = session_names[0], session_names[1]
+            if len(session_names) > 2:
+                logger.warning(
+                    f"{len(session_names)} ecephys data assets found when trying to find surface recording: using first and second only"
+                )
+            first_to_second_recording[first] = second
+        return first_to_second_recording
 
     @property
     def sorted_data_assets(
@@ -401,6 +450,24 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             )
         return tuple(assets)
 
+    @staticmethod
+    def get_stitched_data_assets(
+        smartspim_session_id: str,
+    ) -> tuple[codeocean.data_asset.DataAsset, ...]:
+        """
+        SmartSPIM stitched data assets associated with a particular SmartSPIM session ID, sorted by creation date.
+        Examples
+        --------
+        >>> stitched_assets = IBLDataConverterExtension.get_stitched_data_assets('SmartSPIM_717381_2024-05-20_15-19-15')
+        >>> stitched_assets[0].name
+        'SmartSPIM_717381_2024-05-20_15-19-15_stitched_2024-06-23_02-34-02'
+        """
+        return aind_session.utils.codeocean_utils.sort_by_created(
+            asset
+            for asset in aind_session.Session(smartspim_session_id).data_assets
+            if "_stitched_" in asset.name
+        )
+
     @dataclasses.dataclass
     class ManifestRecord:
         """Dataclass for a single row in the IBL data converter manifest csv."""
@@ -412,7 +479,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         probe_id: str | None = (
             None  # can't be found automatically, must be provided by user
         )
-        surface_finding: int | None = None  # not currently used
+        surface_finding: str | None = None
         annotation_format: str = "json"
 
     def get_partial_manifest_records(
@@ -471,6 +538,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                     probe_id=annotation_name,
                     sorted_recording=sorted_data_asset_name,
                     probe_file=neuroglancer_state_json_name,
+                    surface_finding=self.surface_recording_names.get(sorted_data_asset_name.split("_sorted")[0]),
                 )
                 records.append(row)
         return list(dataclasses.asdict(record) for record in records)
@@ -602,38 +670,99 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             )
         return assets[-1]
 
+    @property
+    def neuroglancer_state_json_asset(self) -> codeocean.data_asset.DataAsset:
+        """Most-recent data asset containing a Neuroglancer state json file for the subject, if one exists."""
+        ng: NeuroglancerExtension = self._base.neuroglancer
+        assets = ng.state_json_data_assets
+        if not assets:
+            raise AttributeError(
+                f"No Neuroglancer state json asset has been created yet for {self._base.id}: run `subject.neuroglancer.from_json({{'...'}}).create_data_asset()`"
+            )
+        return assets[-1]
+
     def run_data_converter_capsule(
         self,
         capsule_id: str = DATA_CONVERTER_CAPSULE_ID,
+        manifest_asset: str | codeocean.data_asset.DataAsset | None = None,
+        neuroglancer_state_json_asset: str | codeocean.data_asset.DataAsset | None = None,
         additional_assets: Iterable[codeocean.data_asset.DataAsset] = (),
-        parameters: list[str] | None = None,
         named_parameters: list[codeocean.computation.NamedRunParam] | None = None,
     ) -> codeocean.computation.Computation:
         """
         Run the IBL data converter capsule on CodeOcean with auto-discovered raw data assets, sorted
-        assets, SmartSPIM data asset, and the manifest csv asset.
+        assets, SmartSPIM data asset, plus manifest csv asset (optionally specified or auto-discovered)
+        and Neuroglancer state json asset (auto-discovered).
 
         Examples
         --------
         >>> subject = aind_session.Subject(717381)
         >>> computation = subject.ibl_data_converter.run_data_converter_capsule()
         """
+        if manifest_asset is not None:
+            manifest_asset = aind_session.utils.codeocean_utils.get_data_asset_model(
+                manifest_asset
+            )
+        else:
+            manifest_asset = self.manifest_data_asset
+
+        if neuroglancer_state_json_asset is not None:
+            neuroglancer_state_json_asset = aind_session.utils.codeocean_utils.get_data_asset_model(
+                neuroglancer_state_json_asset
+            )
+        else:
+            neuroglancer_state_json_asset = self.neuroglancer_state_json_asset
+
+        ng_state_path = next(
+            aind_session.utils.codeocean_utils.get_data_asset_source_dir(neuroglancer_state_json_asset.id).glob("*.json")
+        )
+        image_sources = NeuroglancerState(ng_state_path).image_sources
+        smartspim_data_assets = [asset for asset in self.smartspim_data_assets if any(asset.name in source for source in image_sources)]
+        if not smartspim_data_assets:
+            raise ValueError(
+                f"No SmartSPIM data asset found matching image source(s) in Neuroglancer state json: {image_sources}. Cannot run IBL data converter capsule"
+            )
+
+        stitched_data_assets = []
+        for smartspim_session in (asset.name for asset in smartspim_data_assets):
+            stitched = self.get_stitched_data_assets(smartspim_session)
+            if stitched:
+                stitched_data_assets.append(stitched[-1])
+        if not stitched_data_assets:
+            smartspim_session = next(asset.name for asset in smartspim_data_assets if asset.name in image_sources[0])
+            stitched_id = next(p for p in reversed(image_sources[0].split("/")) if p.startswith(f"{smartspim_session}_stitched_"))
+            path = "".join(image_sources[0].removeprefix('zarr://').rpartition(stitched_id)[:2])
+            raise ValueError(
+                f"No stitched data asset found for SmartSPIM session: try creating an asset for {path}"
+            )
+
+        data_assets = [
+            codeocean.computation.DataAssetsRunParam(id=asset.id, mount=asset.name)
+            for asset in (
+                *self.ecephys_data_assets,
+                *self.sorted_data_assets,
+                *smartspim_data_assets,
+                *stitched_data_assets,
+                manifest_asset,
+                neuroglancer_state_json_asset,
+                *additional_assets,
+            )
+        ]
+        logger.debug(f"Using data assets for IBL data converter: {dict(zip([a.mount for a in data_assets], [a.id for a in data_assets]))}")
+
+        named_parameters = named_parameters or [
+            codeocean.computation.NamedRunParam(param_name='manifest', value=f"{manifest_asset.name}/{manifest_asset.name}.csv"),
+            codeocean.computation.NamedRunParam(param_name='neuroglancer', value=f"{neuroglancer_state_json_asset.name}/{neuroglancer_state_json_asset.name}.json"),
+        ]
+        logger.debug(f"Using named parameters for IBL data converter: {dict(zip([p.param_name for p in named_parameters], [p.value for p in named_parameters]))}")
+
+
         run_params = codeocean.computation.RunParams(
             capsule_id=capsule_id,
-            data_assets=[
-                codeocean.computation.DataAssetsRunParam(id=asset.id, mount=asset.name)
-                for asset in (
-                    *self.ecephys_data_assets,
-                    *self.sorted_data_assets,
-                    self.smartspim_data_assets[-1],
-                    self.manifest_data_asset,
-                    *additional_assets,
-                )
-            ],
-            parameters=parameters or [],
-            named_parameters=named_parameters or [],
+            data_assets=data_assets,
+            named_parameters=named_parameters,
         )
-        logger.debug(f"Running data converter capsule: {run_params.capsule_id}")
+        logger.info(f"Running IBL data converter capsule {capsule_id}")
         return aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
             run_params
         )
@@ -645,6 +774,35 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
     _base: aind_session.Subject
 
     state_json_dir: upath.UPath = SCRATCH_STORAGE_DIR / "neuroglancer_states"
+
+    @staticmethod
+    def from_json(
+        content: str | Mapping[str, Any],
+    ) -> NeuroglancerState:
+        """
+        Instantiate a Neuroglancer state object from a json string or dict.
+        
+        Examples
+        --------
+        >>> NeuroglancerExtension.from_json("tests/resources/example_neuroglancer_state.json")
+        NeuroglancerState(SmartSPIM_717381_2024-07-03_10-49-01)
+        """
+        return NeuroglancerState(content)
+
+    @property
+    def states(
+        self,
+    ) -> tuple[NeuroglancerState, ...]:
+        """
+        All Neuroglancer state objects associated with the subject, one per state json file, sorted by file name.
+
+        Examples
+        --------
+        >>> subject = aind_session.Subject(717381)
+        >>> subject.neuroglancer.states[0]
+        NeuroglancerState(SmartSPIM_717381_2024-07-03_10-49-01)
+        """
+        return tuple(NeuroglancerState(p) for p in self.state_json_paths)
 
     @property
     def state_json_paths(self) -> tuple[upath.UPath, ...]:
@@ -666,19 +824,22 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
         )
 
     @property
-    def states(
-        self,
-    ) -> tuple[NeuroglancerState, ...]:
-        """
-        All Neuroglancer state objects associated with the subject, one per state json file, sorted by file name.
+    def state_json_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
+        """All Neuroglancer state json data assets associated with the subject, sorted by name.
 
         Examples
         --------
         >>> subject = aind_session.Subject(717381)
-        >>> subject.neuroglancer.states[0]
-        NeuroglancerState(SmartSPIM_717381_2024-07-03_10-49-01)
+        >>> subject.neuroglancer.state_json_data_assets[0].name
+        'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-10-27_17-06-43'
         """
-        return tuple(NeuroglancerState(p) for p in self.state_json_paths)
+        # name is coupled with NeuroglancerState.get_new_file_name()
+        return tuple(
+            sorted(
+                (asset for asset in self._base.data_assets if "neuroglancer-state" in asset.name),
+                key=lambda a: a.name,
+            )
+        )
 
 
 if __name__ == "__main__":
