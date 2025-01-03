@@ -821,7 +821,7 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
         Examples
         --------
         >>> subject = aind_session.Subject(717381)
-        >>> subject.neuroglancer.state_json_assets[0].name
+        >>> subject.neuroglancer.state_json_data_assets[0].name
         'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-08-16_23-15-47'
         """
         # name is coupled with NeuroglancerState.get_new_file_name()
