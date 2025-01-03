@@ -330,7 +330,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         --------
         >>> subject = aind_session.Subject(717381)
         >>> subject.ibl_data_converter.surface_recording_names
-        {'ecephys_717381_2024-04-09_11-14-13': 'surface_717381_2024-04-09_11-14-13'}
+        {'ecephys_717381_2024-04-09_11-14-13': 'surface_717381_2024-04-09_11-14-13': 'ecephys_717381_2024-04-10_16-29-12': 'ecephys_717381_2024-04-10_16-51-20'}
         """
         date_to_session_names: dict[str, list[str]] = {}
         for asset in self.ecephys_data_assets:
