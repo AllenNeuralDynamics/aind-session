@@ -696,8 +696,11 @@ def get_subject_data_assets(
     from_co = search_data_assets(search_params)
     co_asset_ids = {asset.id for asset in from_co}
     # get assets from DocDB:
-    docdb_asset_ids = aind_session.utils.docdb_utils.get_codeocean_data_asset_ids_from_docdb(
-        subject_id=subject_id, ttl_hash=ttl_hash,
+    docdb_asset_ids = (
+        aind_session.utils.docdb_utils.get_codeocean_data_asset_ids_from_docdb(
+            subject_id=subject_id,
+            ttl_hash=ttl_hash,
+        )
     )
     from_docdb = []
     if docdb_asset_ids:

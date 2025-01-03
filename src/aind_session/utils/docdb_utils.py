@@ -203,13 +203,13 @@ def get_codeocean_data_asset_ids_from_docdb(
     del ttl_hash
     if partial_name is None and subject_id is None:
         raise ValueError("Either `partial_name` or `subject_id` must be provided")
-    
+
     filter_query: dict[str, Any] = {}
     if partial_name is not None:
         filter_query["name"] = {"$regex": partial_name}
     if subject_id is not None:
         filter_query["subject.subject_id"] = str(subject_id)
-        
+
     records = get_docdb_api_client().retrieve_docdb_records(
         filter_query=filter_query,
         projection={"external_links.Code Ocean": 1, "_id": 0},
@@ -223,6 +223,7 @@ def get_codeocean_data_asset_ids_from_docdb(
         for record in records
         for id_ in extract_codeocean_data_asset_ids_from_docdb_record(record)
     ]
+
 
 def extract_codeocean_data_asset_ids_from_docdb_record(
     record: Mapping[str, Any],

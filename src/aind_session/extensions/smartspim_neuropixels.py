@@ -8,9 +8,9 @@ import datetime
 import json
 import logging
 import time
+import zoneinfo
 from collections.abc import Iterable, Mapping
 from typing import Any
-import zoneinfo
 
 import codeocean.computation
 import codeocean.data_asset
@@ -102,7 +102,7 @@ class NeuroglancerState:
     @property
     def image_data_assets(self) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """Data assets with image source session ID in their name
-        
+
         Examples
         --------
         >>> NeuroglancerState("tests/resources/example_neuroglancer_state.json").image_data_assets[0].name
@@ -110,7 +110,9 @@ class NeuroglancerState:
         """
         assets: list[codeocean.data_asset.DataAsset] = []
         for source in self.image_sources:
-            session_id = next(p for p in reversed(source.split("/")) if p.startswith("SmartSPIM_"))
+            session_id = next(
+                p for p in reversed(source.split("/")) if p.startswith("SmartSPIM_")
+            )
             results = aind_session.utils.codeocean_utils.get_data_assets(
                 name_startswith=session_id,
                 ttl_hash=aind_session.utils.misc_utils.get_ttl_hash(seconds=1),
@@ -217,7 +219,9 @@ class NeuroglancerState:
         logger.debug(f"Neuroglancer annotation file written to {path.as_posix()}")
         return path
 
-    def create_data_asset(self, path: npc_io.PathLike | None = None) -> codeocean.data_asset.DataAsset:
+    def create_data_asset(
+        self, path: npc_io.PathLike | None = None
+    ) -> codeocean.data_asset.DataAsset:
         """Create a CodeOcean data asset from the Neuroglancer state json file.
 
         - name and tags are created automatically based on the SmartSPIM session ID
@@ -322,10 +326,10 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
     @property
     def surface_recording_names(self) -> dict[str, str]:
         """A mapping of ecephys session names to corresponding surface recording names.
-        
+
             - surface recordings are assumed to be the second raw ecephys data asset on a given day for a particular subject
             - not all ecpehys sessions have a surface recording (in which case they will not be in the mapping)
-            
+
         Examples
         --------
         >>> subject = aind_session.Subject(717381)
@@ -339,7 +343,9 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         first_to_second_recording = {}
         for session_names in date_to_session_names.values():
             if len(session_names) == 1:
-                logger.debug(f"Only one recording found ({session_names[0]}): no option for surface recording available")
+                logger.debug(
+                    f"Only one recording found ({session_names[0]}): no option for surface recording available"
+                )
                 continue
             session_names = sorted(session_names)
             first, second = session_names[0], session_names[1]
@@ -535,7 +541,9 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                     probe_id=annotation_name,
                     sorted_recording=sorted_data_asset_name,
                     probe_file=neuroglancer_state_json_name,
-                    surface_finding=self.surface_recording_names.get(sorted_data_asset_name.split("_sorted")[0]),
+                    surface_finding=self.surface_recording_names.get(
+                        sorted_data_asset_name.split("_sorted")[0]
+                    ),
                 )
                 records.append(row)
         return list(dataclasses.asdict(record) for record in records)
@@ -682,7 +690,9 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         self,
         capsule_id: str = DATA_CONVERTER_CAPSULE_ID,
         manifest_asset: str | codeocean.data_asset.DataAsset | None = None,
-        neuroglancer_state_json_asset: str | codeocean.data_asset.DataAsset | None = None,
+        neuroglancer_state_json_asset: (
+            str | codeocean.data_asset.DataAsset | None
+        ) = None,
         additional_assets: Iterable[codeocean.data_asset.DataAsset] = (),
         named_parameters: list[codeocean.computation.NamedRunParam] | None = None,
     ) -> codeocean.computation.Computation:
@@ -704,35 +714,53 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             manifest_asset = self.manifest_data_asset
 
         if neuroglancer_state_json_asset is not None:
-            neuroglancer_state_json_asset = aind_session.utils.codeocean_utils.get_data_asset_model(
-                neuroglancer_state_json_asset
+            neuroglancer_state_json_asset = (
+                aind_session.utils.codeocean_utils.get_data_asset_model(
+                    neuroglancer_state_json_asset
+                )
             )
         else:
             neuroglancer_state_json_asset = self.neuroglancer_state_json_asset
 
         ng_state_path = next(
-            aind_session.utils.codeocean_utils.get_data_asset_source_dir(neuroglancer_state_json_asset.id).glob("*.json")
+            aind_session.utils.codeocean_utils.get_data_asset_source_dir(
+                neuroglancer_state_json_asset.id
+            ).glob("*.json")
         )
         image_sources = NeuroglancerState(ng_state_path).image_sources
-        smartspim_data_assets = [asset for asset in self.smartspim_data_assets if any(asset.name in source for source in image_sources)]
+        smartspim_data_assets = [
+            asset
+            for asset in self.smartspim_data_assets
+            if any(asset.name in source for source in image_sources)
+        ]
         if not smartspim_data_assets:
             raise ValueError(
                 f"No SmartSPIM data asset found matching image source(s) in Neuroglancer state json: {image_sources}. Cannot run IBL data converter capsule"
             )
-        
+
         stitched_data_assets = []
         for smartspim_session in (asset.name for asset in smartspim_data_assets):
             stitched = self.get_stitched_data_assets(smartspim_session)
             if stitched:
                 stitched_data_assets.append(stitched[-1])
         if not stitched_data_assets:
-            smartspim_session = next(asset.name for asset in smartspim_data_assets if asset.name in image_sources[0])
-            stitched_id = next(p for p in reversed(image_sources[0].split("/")) if p.startswith(f"{smartspim_session}_stitched_"))
-            path = "".join(image_sources[0].removeprefix('zarr://').rpartition(stitched_id)[:2])
+            smartspim_session = next(
+                asset.name
+                for asset in smartspim_data_assets
+                if asset.name in image_sources[0]
+            )
+            stitched_id = next(
+                p
+                for p in reversed(image_sources[0].split("/"))
+                if p.startswith(f"{smartspim_session}_stitched_")
+            )
+            path = "".join(
+                image_sources[0].removeprefix("zarr://").rpartition(stitched_id)[:2]
+            )
             raise ValueError(
                 f"No stitched data asset found for SmartSPIM session: try creating an asset for {path}"
             )
-            
+
         data_assets = [
             codeocean.computation.DataAssetsRunParam(id=asset.id, mount=asset.name)
             for asset in (
@@ -745,14 +773,23 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 *additional_assets,
             )
         ]
-        logger.debug(f"Using data assets for IBL data converter: {dict(zip([a.mount for a in data_assets], [a.id for a in data_assets]))}")
+        logger.debug(
+            f"Using data assets for IBL data converter: {dict(zip([a.mount for a in data_assets], [a.id for a in data_assets]))}"
+        )
 
         named_parameters = named_parameters or [
-            codeocean.computation.NamedRunParam(param_name='manifest', value=f"{manifest_asset.name}/{manifest_asset.name}.csv"),
-            codeocean.computation.NamedRunParam(param_name='neuroglancer', value=f"{neuroglancer_state_json_asset.name}/{neuroglancer_state_json_asset.name}.json"),
+            codeocean.computation.NamedRunParam(
+                param_name="manifest",
+                value=f"{manifest_asset.name}/{manifest_asset.name}.csv",
+            ),
+            codeocean.computation.NamedRunParam(
+                param_name="neuroglancer",
+                value=f"{neuroglancer_state_json_asset.name}/{neuroglancer_state_json_asset.name}.json",
+            ),
         ]
-        logger.debug(f"Using named parameters for IBL data converter: {dict(zip([p.param_name for p in named_parameters], [p.value for p in named_parameters]))}")
-
+        logger.debug(
+            f"Using named parameters for IBL data converter: {dict(zip([p.param_name for p in named_parameters], [p.value for p in named_parameters]))}"
+        )
 
         run_params = codeocean.computation.RunParams(
             capsule_id=capsule_id,
@@ -776,8 +813,7 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
         self,
         content: str | Mapping[str, Any],
     ) -> NeuroglancerState:
-        """
-        """
+        """ """
         return NeuroglancerState(content)
 
     @property
@@ -827,7 +863,11 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
         # name is coupled with NeuroglancerState.get_new_file_name()
         return tuple(
             sorted(
-                (asset for asset in self._base.data_assets if "neuroglancer-state" in asset.name),
+                (
+                    asset
+                    for asset in self._base.data_assets
+                    if "neuroglancer-state" in asset.name
+                ),
                 key=lambda a: a.name,
             )
         )

@@ -13,7 +13,7 @@ dependencies = [
     "aind-data-access-api[docdb]>=0.14.0",
     "tzdata>=2024.2",
 ]
-version = "0.3.13"
+version = "0.3.14"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
