@@ -108,7 +108,7 @@ class NeuroglancerState:
         >>> NeuroglancerState("tests/resources/example_neuroglancer_state.json").image_data_assets[0].name
         'SmartSPIM_717381_2024-07-03_10-49-01_stitched_2024-08-16_23-15-47'
         """
-        assets = []
+        assets: list[codeocean.data_asset.DataAsset] = []
         for source in self.image_sources:
             session_id = next(p for p in reversed(source.split("/")) if p.startswith("SmartSPIM_"))
             results = aind_session.utils.codeocean_utils.get_data_assets(
