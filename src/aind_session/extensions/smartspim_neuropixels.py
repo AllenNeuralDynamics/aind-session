@@ -8,9 +8,9 @@ import datetime
 import json
 import logging
 import time
-import zoneinfo
 from collections.abc import Iterable, Mapping
 from typing import Any
+import zoneinfo
 
 import codeocean.computation
 import codeocean.data_asset
@@ -330,7 +330,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         --------
         >>> subject = aind_session.Subject(717381)
         >>> subject.ibl_data_converter.surface_recording_names
-        {'ecephys_717381_2024-04-09_11-14-13': 'ecephys_717381_2024-04-09_11-44-16', 'ecephys_717381_2024-04-10_16-29-12': 'ecephys_717381_2024-04-10_16-51-20'}
+        {'ecephys_717381_2024-04-09_11-14-13': 'surface_717381_2024-04-09_11-14-13'}
         """
         date_to_session_names: dict[str, list[str]] = {}
         for asset in self.ecephys_data_assets:
@@ -455,9 +455,6 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         smartspim_session_id: str,
     ) -> tuple[codeocean.data_asset.DataAsset, ...]:
         """
-        SmartSPIM stitched data assets associated with a particular SmartSPIM session ID, sorted by creation date.
-        Examples
-        --------
         >>> stitched_assets = IBLDataConverterExtension.get_stitched_data_assets('SmartSPIM_717381_2024-05-20_15-19-15')
         >>> stitched_assets[0].name
         'SmartSPIM_717381_2024-05-20_15-19-15_stitched_2024-06-23_02-34-02'
@@ -722,7 +719,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             raise ValueError(
                 f"No SmartSPIM data asset found matching image source(s) in Neuroglancer state json: {image_sources}. Cannot run IBL data converter capsule"
             )
-
+        
         stitched_data_assets = []
         for smartspim_session in (asset.name for asset in smartspim_data_assets):
             stitched = self.get_stitched_data_assets(smartspim_session)
@@ -735,7 +732,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             raise ValueError(
                 f"No stitched data asset found for SmartSPIM session: try creating an asset for {path}"
             )
-
+            
         data_assets = [
             codeocean.computation.DataAssetsRunParam(id=asset.id, mount=asset.name)
             for asset in (
@@ -775,17 +772,11 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
 
     state_json_dir: upath.UPath = SCRATCH_STORAGE_DIR / "neuroglancer_states"
 
-    @staticmethod
     def from_json(
+        self,
         content: str | Mapping[str, Any],
     ) -> NeuroglancerState:
         """
-        Instantiate a Neuroglancer state object from a json string or dict.
-        
-        Examples
-        --------
-        >>> NeuroglancerExtension.from_json("tests/resources/example_neuroglancer_state.json")
-        NeuroglancerState(SmartSPIM_717381_2024-07-03_10-49-01)
         """
         return NeuroglancerState(content)
 
@@ -830,8 +821,8 @@ class NeuroglancerExtension(aind_session.extension.ExtensionBaseClass):
         Examples
         --------
         >>> subject = aind_session.Subject(717381)
-        >>> subject.neuroglancer.state_json_data_assets[0].name
-        'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-10-27_17-06-43'
+        >>> subject.neuroglancer.state_json_assets[0].name
+        'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-08-16_23-15-47'
         """
         # name is coupled with NeuroglancerState.get_new_file_name()
         return tuple(
