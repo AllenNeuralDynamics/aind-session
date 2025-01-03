@@ -184,7 +184,8 @@ def get_docdb_record(
 @_retry_on_503()
 @functools.cache
 def get_codeocean_data_asset_ids_from_docdb(
-    partial_name: str,
+    partial_name: str | None = None,
+    subject_id: str | int | None = None,
     ttl_hash: int | None = None,
 ) -> list[str]:
     """Returns all IDs of data assets in Code Ocean from records in DocDB whose `name` field
@@ -194,12 +195,23 @@ def get_codeocean_data_asset_ids_from_docdb(
     --------
     >>> get_codeocean_data_asset_ids_from_docdb('SmartSPIM_738819')[0]
     '797117df-b890-44bc-899e-b62de401ff08'
+    >>> get_codeocean_data_asset_ids_from_docdb(subject_id=738819)[0]
+    '797117df-b890-44bc-899e-b62de401ff08'
     >>> get_codeocean_data_asset_ids_from_docdb('ecephys_676909_2023-12-13_13-43-40')[0]
     '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
     """
     del ttl_hash
+    if partial_name is None and subject_id is None:
+        raise ValueError("Either `partial_name` or `subject_id` must be provided")
+    
+    filter_query: dict[str, Any] = {}
+    if partial_name is not None:
+        filter_query["name"] = {"$regex": partial_name}
+    if subject_id is not None:
+        filter_query["subject.subject_id"] = str(subject_id)
+        
     records = get_docdb_api_client().retrieve_docdb_records(
-        filter_query={"name": {"$regex": partial_name}},
+        filter_query=filter_query,
         projection={"external_links.Code Ocean": 1, "_id": 0},
         sort={"created": 1},
     )
@@ -211,7 +223,6 @@ def get_codeocean_data_asset_ids_from_docdb(
         for record in records
         for id_ in extract_codeocean_data_asset_ids_from_docdb_record(record)
     ]
-
 
 def extract_codeocean_data_asset_ids_from_docdb_record(
     record: Mapping[str, Any],

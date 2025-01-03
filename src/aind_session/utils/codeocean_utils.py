@@ -693,25 +693,19 @@ def get_subject_data_assets(
     search_params["sort_order"] = codeocean.components.SortOrder.Ascending
     t0 = time.time()
     # get assets from CodeOcean:
-    assets = search_data_assets(search_params)
+    from_co = search_data_assets(search_params)
+    co_asset_ids = {asset.id for asset in from_co}
     # get assets from DocDB:
-    docdb_records = aind_session.utils.docdb_utils.get_subject_docdb_records(
-        subject_id, ttl_hash=ttl_hash
+    docdb_asset_ids = aind_session.utils.docdb_utils.get_codeocean_data_asset_ids_from_docdb(
+        subject_id=subject_id, ttl_hash=ttl_hash,
     )
     from_docdb = []
-    if docdb_records:
-        docdb_asset_ids = [
-            id_
-            for record in docdb_records
-            for id_ in aind_session.utils.docdb_utils.extract_codeocean_data_asset_ids_from_docdb_record(
-                record
-            )
-        ]
+    if docdb_asset_ids:
         for id_ in docdb_asset_ids:
-            if id_ in [asset.id for asset in assets]:
+            if id_ in co_asset_ids:
                 continue
             try:
-                get_data_asset_model(id_)
+                asset = get_data_asset_model(id_)
             except requests.HTTPError as exc:
                 if exc.response.status_code == 401:
                     logger.warning(
@@ -720,9 +714,8 @@ def get_subject_data_assets(
                     continue
                 raise
             else:
-                from_docdb.append(id_)
-    assets = assets + tuple(from_docdb)
-
+                from_docdb.append(asset)
+    assets = from_co + tuple(from_docdb)
     logger.debug(
         f"Got {len(assets)} data asset(s) for subject {subject_id!r} in {time.time() - t0:.3f}s"
     )
