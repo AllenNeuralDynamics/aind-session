@@ -7,11 +7,13 @@ import dataclasses
 import datetime
 import json
 import logging
+import re
 import time
 import zoneinfo
 from collections.abc import Iterable, Mapping
-from typing import Any
+from typing import Any, Literal
 
+import aind_codeocean_pipeline_monitor.models
 import codeocean.computation
 import codeocean.data_asset
 import npc_io
@@ -283,10 +285,11 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         self.use_data_assets_with_sorting_analyzer = True
 
     DATA_CONVERTER_CAPSULE_ID = "9fe42995-ffff-40ff-9c4c-c8206b8aacb5"
-    # test capsule: "372263e6-d942-4241-ba71-763a1062f2b7"
-    # actual capsule: "9fe42995-ffff-40ff-9c4c-c8206b8aacb5"
     """https://codeocean.allenneuraldynamics.org/capsule/8363069/tree"""
 
+    PIPELINE_MONITOR_CAPUSLE_ID = "bd5f10ce-0f3e-4805-95f1-7a42c9427c23"
+    """Pipeline monitor capsule for capturing data assets e.g. https://codeocean.allenneuraldynamics.org/capsule/9889491/tree"""
+    
     @property
     def ecephys_sessions(self) -> tuple[aind_session.Session, ...]:
         """All ecephys sessions associated with the subject, sorted by ascending session date.
@@ -485,6 +488,20 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         surface_finding: str | None = None
         annotation_format: str = "json"
 
+    @staticmethod
+    def get_mindscope_probe_day_from_ng_state(
+        neuroglancer_state: NeuroglancerState,
+    ) -> dict[str, dict[Literal["probe", "day"], str]]:
+        # extract probe A-F and day 1-9, with optional separators
+        pattern = r"(?P<probe>[A-F])[-_ ]*(?P<day>[1-9])"
+        results = {}
+        for name in neuroglancer_state.annotation_names:
+            result = re.search(pattern, name)
+            if result is None:
+                continue
+            results[name] = {key: str(result.group(key)) for key in ("probe", "day")}
+        return results  # type: ignore[return-value]
+
     def get_partial_manifest_records(
         self,
         neuroglancer_state_json_name: str | None = None,
@@ -533,19 +550,56 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             )
 
         records = []
-        for annotation_name in neuroglancer_state.annotation_names:
-            for sorted_data_asset_name in sorted_data_asset_names:
-                row = IBLDataConverterExtension.ManifestRecord(
-                    mouseid=self._base.id,
-                    probe_name="",
-                    probe_id=annotation_name,
-                    sorted_recording=sorted_data_asset_name,
-                    probe_file=neuroglancer_state_json_name,
-                    surface_finding=self.surface_recording_names.get(
-                        sorted_data_asset_name.split("_sorted")[0]
-                    ),
-                )
-                records.append(row)
+
+        if not any(self.get_mindscope_probe_day_from_ng_state(neuroglancer_state)):
+            for annotation_name in neuroglancer_state.annotation_names:
+                for sorted_data_asset_name in sorted_data_asset_names:
+                    row = IBLDataConverterExtension.ManifestRecord(
+                        mouseid=self._base.id,
+                        probe_name="",
+                        probe_id=annotation_name,
+                        sorted_recording=sorted_data_asset_name,
+                        probe_file=neuroglancer_state_json_name,
+                        surface_finding=self.surface_recording_names.get(
+                            sorted_data_asset_name.split("_sorted")[0]
+                        ),
+                    )
+                    records.append(row)
+        else:
+            ng_to_probe_day = self.get_mindscope_probe_day_from_ng_state(
+                neuroglancer_state
+            )
+            days = sorted({int(v["day"]) for v in ng_to_probe_day.values()})
+            ephys_sessions = sorted({asset.name for asset in self.ecephys_data_assets})
+            for i, ephys_session in enumerate(ephys_sessions):
+                day = i + 1
+                if day not in days:
+                    continue
+                for ng_annotation, probe_day in ng_to_probe_day.items():
+                    if int(probe_day["day"]) == day:
+                        sorted_asset_name = next(
+                            (
+                                n
+                                for n in sorted_data_asset_names
+                                if n.startswith(ephys_session)
+                            ),
+                            None,
+                        )
+                        if sorted_asset_name is None:
+                            raise ValueError(
+                                f"No sorted asset found for {ephys_session} (day {day})"
+                            )
+                        row = IBLDataConverterExtension.ManifestRecord(
+                            mouseid=self._base.id,
+                            probe_name=f"Probe{probe_day['probe']}",
+                            probe_id=ng_annotation,
+                            sorted_recording=sorted_asset_name,
+                            probe_file=neuroglancer_state_json_name,
+                            surface_finding=self.surface_recording_names.get(
+                                sorted_asset_name.split("_sorted")[0]
+                            ),
+                        )
+                        records.append(row)
         return list(dataclasses.asdict(record) for record in records)
 
     @property
@@ -695,6 +749,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         ) = None,
         additional_assets: Iterable[codeocean.data_asset.DataAsset] = (),
         named_parameters: list[codeocean.computation.NamedRunParam] | None = None,
+        pipeline_monitor_capsule_id: str | None = PIPELINE_MONITOR_CAPUSLE_ID,
     ) -> codeocean.computation.Computation:
         """
         Run the IBL data converter capsule on CodeOcean with auto-discovered raw data assets, sorted
@@ -790,12 +845,40 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         logger.debug(
             f"Using named parameters for IBL data converter: {dict(zip([p.param_name for p in named_parameters], [p.value for p in named_parameters]))}"
         )
-
-        run_params = codeocean.computation.RunParams(
-            capsule_id=capsule_id,
-            data_assets=data_assets,
-            named_parameters=named_parameters,
-        )
+        
+        if not pipeline_monitor_capsule_id:
+            run_params = codeocean.computation.RunParams(
+                capsule_id=capsule_id,
+                data_assets=data_assets,
+                named_parameters=named_parameters,
+            )
+        else:
+            logger.info(f"Using monitor capsule {pipeline_monitor_capsule_id} to capture IBL data converter output as a data asset")
+            
+            pipeline_monitor_settings = aind_codeocean_pipeline_monitor.models.PipelineMonitorSettings(
+                run_params=codeocean.computation.RunParams(
+                    capsule_id=capsule_id,
+                    data_assets=data_assets,
+                    named_parameters=named_parameters,
+                ),
+                computation_polling_interval=1 * 60,
+                computation_timeout=48 * 3600,
+                capture_settings=aind_codeocean_pipeline_monitor.models.CaptureSettings(
+                    name=f"{smartspim_session}_ibl-converted_{datetime.datetime.now(tz=zoneinfo.ZoneInfo('US/Pacific')):%Y-%m-%d_%H-%M-%S}",
+                    tags=[str(self._base.id), "smartSPIM", "ecephys", "IBL", "annotation"],
+                    custom_metadata={
+                        "data level": "derived",
+                        "experiment type": "ecephys",
+                        "subject id": str(self._base.id),
+                    },
+                ),
+            )
+            run_params = codeocean.computation.RunParams(
+                capsule_id=pipeline_monitor_capsule_id,
+                data_assets=data_assets,
+                parameters=[pipeline_monitor_settings.model_dump_json()],
+            )
+            
         logger.info(f"Running IBL data converter capsule {capsule_id}")
         return aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
             run_params

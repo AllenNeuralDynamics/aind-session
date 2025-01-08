@@ -12,6 +12,7 @@ dependencies = [
     "npc-session>=0.1.39",
     "aind-data-access-api[docdb]>=0.14.0",
     "tzdata>=2024.2",
+    "aind-codeocean-pipeline-monitor>=0.5.2",
 ]
 version = "0.3.14"
 classifiers = [

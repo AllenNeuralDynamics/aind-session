@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:5ed57c11390fca3a1793e5b68e34b6d17c9ba0fa29d0dedddb9fd56a8cb433a7"
+content_hash = "sha256:ccadca467436e845f4ae322324eea135f567c3079af87a56a2e78c3a6d98859c"
 
 [[metadata.targets]]
 requires_python = ">=3.9,<3.12"
@@ -26,6 +26,23 @@ dependencies = [
 files = [
     {file = "aind_codeocean_api-0.5.0-py3-none-any.whl", hash = "sha256:0ab46cd51553c7b7dc51dd9ff961863ff58231dab102bdaa59571432a110e66d"},
     {file = "aind_codeocean_api-0.5.0.tar.gz", hash = "sha256:02425b1f49c588467050b007f45c727ea6f0fcc30b09a30d231e9b85b7bac5c0"},
+]
+
+[[package]]
+name = "aind-codeocean-pipeline-monitor"
+version = "0.5.2"
+requires_python = ">=3.9"
+summary = "Package to define and run a Code Ocean Pipeline Monitor Job"
+groups = ["default"]
+marker = "python_version < \"3.12\" and python_version >= \"3.9\""
+dependencies = [
+    "codeocean>=0.1.7",
+    "pydantic-settings>=2.0",
+    "pydantic>=2.0",
+]
+files = [
+    {file = "aind_codeocean_pipeline_monitor-0.5.2-py3-none-any.whl", hash = "sha256:c2acbc86e50600947a0978ba6248322c835731314d5886b234ec2ced37c10597"},
+    {file = "aind_codeocean_pipeline_monitor-0.5.2.tar.gz", hash = "sha256:b7262d9a4c169f7fc60e50fd59e048dab3aeac17a209ec0a25f183293989a09d"},
 ]
 
 [[package]]
