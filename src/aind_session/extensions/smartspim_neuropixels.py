@@ -267,6 +267,7 @@ class NeuroglancerState:
         logger.debug(f"Waiting for new asset {asset.name} to be ready")
         updated_asset = aind_session.utils.codeocean_utils.wait_until_ready(
             data_asset=asset,
+            check_files=True,
             timeout=60,
         )
         logger.debug(f"Asset {updated_asset.name} is ready")
@@ -481,10 +482,12 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         mouseid: str
         sorted_recording: str
         probe_file: str
-        probe_name: str
-        probe_id: str | None = (
-            None  # can't be found automatically, must be provided by user
-        )
+        # ---------------------------------------------------------------- #
+        # these can't be mapped automatically, need be updated by user:
+        probe_name: str  | None = None
+        probe_shank: str | None = None
+        probe_id: str | None = None
+        # ---------------------------------------------------------------- #
         surface_finding: str | None = None
         annotation_format: str = "json"
 
