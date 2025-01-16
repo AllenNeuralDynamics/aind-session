@@ -251,6 +251,10 @@ class NeuroglancerState:
             name=path.stem,
             mount=path.stem,
             tags=["neuroglancer", "ecephys", "annotation", self.session.subject.id],
+            custom_metadata={
+                "experiment type": "SmartSPIM",
+                "subject id": str(self.session.subject_id),
+            },
             source=codeocean.data_asset.Source(
                 aws=codeocean.data_asset.AWSS3Source(
                     bucket=bucket,
@@ -682,6 +686,10 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
             name=asset_name or self.csv_manifest_path.stem,
             mount=asset_name or self.csv_manifest_path.stem,
             tags=["ibl", "annotation", "manifest", self._base.id],
+            custom_metadata={
+                "experiment type": "SmartSPIM",
+                "subject id": str(self._base.id),
+            },
             source=codeocean.data_asset.Source(
                 aws=codeocean.data_asset.AWSS3Source(
                     bucket=bucket,
