@@ -656,7 +656,8 @@ def get_subject_data_assets(
     """
     Get all assets associated with a subject ID.
 
-    - uses the `subject` field in asset metadata
+    - uses the `subject id` field in asset metadata
+    - also includes any assets found with `subject_id` in title
     - `subject_id` will be cast to a string for searching
     - subject ID is not required to be a labtracks MID
     - assets are sorted by ascending creation date
@@ -689,11 +690,9 @@ def get_subject_data_assets(
             "Cannot provide 'query' as a search parameter: a new query will be created using 'subject id' field to search for assets"
         )
     search_params["query"] = get_data_asset_search_query(subject_id=subject_id)
-    search_params["sort_field"] = codeocean.data_asset.DataAssetSortBy.Created
-    search_params["sort_order"] = codeocean.components.SortOrder.Ascending
     t0 = time.time()
     # get assets from CodeOcean:
-    from_co = search_data_assets(search_params)
+    from_co = search_data_assets(search_params) + search_data_assets({'query': str(subject_id)})
     co_asset_ids = {asset.id for asset in from_co}
     # get assets from DocDB:
     docdb_asset_ids = (
