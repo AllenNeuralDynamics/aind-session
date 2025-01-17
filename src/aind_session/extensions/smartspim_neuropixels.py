@@ -292,8 +292,8 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
     DATA_CONVERTER_CAPSULE_ID = "9fe42995-ffff-40ff-9c4c-c8206b8aacb5"
     """https://codeocean.allenneuraldynamics.org/capsule/8363069/tree"""
 
-    PIPELINE_MONITOR_CAPUSLE_ID = "bd5f10ce-0f3e-4805-95f1-7a42c9427c23"
-    """Pipeline monitor capsule for capturing data assets e.g. https://codeocean.allenneuraldynamics.org/capsule/9889491/tree"""
+    PIPELINE_MONITOR_CAPUSLE_ID = "567b5b98-8d41-413b-9375-9ca610ca2fd3"
+    """Pipeline monitor capsule for capturing data assets e.g. https://codeocean.allenneuraldynamics.org/capsule/5449547/tree"""
     
     @property
     def ecephys_sessions(self) -> tuple[aind_session.Session, ...]:
