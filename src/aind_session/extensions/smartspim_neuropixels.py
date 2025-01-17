@@ -294,7 +294,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
 
     PIPELINE_MONITOR_CAPUSLE_ID = "567b5b98-8d41-413b-9375-9ca610ca2fd3"
     """Pipeline monitor capsule for capturing data assets e.g. https://codeocean.allenneuraldynamics.org/capsule/5449547/tree"""
-    
+
     @property
     def ecephys_sessions(self) -> tuple[aind_session.Session, ...]:
         """All ecephys sessions associated with the subject, sorted by ascending session date.
@@ -488,7 +488,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         probe_file: str
         # ---------------------------------------------------------------- #
         # these can't be mapped automatically, need be updated by user:
-        probe_name: str  | None = None
+        probe_name: str | None = None
         probe_shank: str | None = None
         probe_id: str | None = None
         # ---------------------------------------------------------------- #
@@ -856,7 +856,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
         logger.debug(
             f"Using named parameters for IBL data converter: {dict(zip([p.param_name for p in named_parameters], [p.value for p in named_parameters]))}"
         )
-        
+
         if not pipeline_monitor_capsule_id:
             run_params = codeocean.computation.RunParams(
                 capsule_id=capsule_id,
@@ -864,8 +864,10 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 named_parameters=named_parameters,
             )
         else:
-            logger.info(f"Using monitor capsule {pipeline_monitor_capsule_id} to capture IBL data converter output as a data asset")
-            
+            logger.info(
+                f"Using monitor capsule {pipeline_monitor_capsule_id} to capture IBL data converter output as a data asset"
+            )
+
             pipeline_monitor_settings = aind_codeocean_pipeline_monitor.models.PipelineMonitorSettings(
                 run_params=codeocean.computation.RunParams(
                     capsule_id=capsule_id,
@@ -876,7 +878,13 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 computation_timeout=48 * 3600,
                 capture_settings=aind_codeocean_pipeline_monitor.models.CaptureSettings(
                     name=f"{smartspim_session}_ibl-converted_{datetime.datetime.now(tz=zoneinfo.ZoneInfo('US/Pacific')):%Y-%m-%d_%H-%M-%S}",
-                    tags=[str(self._base.id), "smartSPIM", "ecephys", "IBL", "annotation"],
+                    tags=[
+                        str(self._base.id),
+                        "smartSPIM",
+                        "ecephys",
+                        "IBL",
+                        "annotation",
+                    ],
                     custom_metadata={
                         "data level": "derived",
                         "experiment type": "ecephys",
@@ -889,7 +897,7 @@ class IBLDataConverterExtension(aind_session.ExtensionBaseClass):
                 data_assets=data_assets,
                 parameters=[pipeline_monitor_settings.model_dump_json()],
             )
-            
+
         logger.info(f"Running IBL data converter capsule {capsule_id}")
         return aind_session.utils.codeocean_utils.get_codeocean_client().computations.run_capsule(
             run_params

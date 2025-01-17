@@ -692,7 +692,9 @@ def get_subject_data_assets(
     search_params["query"] = get_data_asset_search_query(subject_id=subject_id)
     t0 = time.time()
     # get assets from CodeOcean:
-    from_co = search_data_assets(search_params) + search_data_assets({'query': str(subject_id)})
+    from_co = search_data_assets(search_params) + search_data_assets(
+        {"query": str(subject_id)}
+    )
     co_asset_ids = {asset.id for asset in from_co}
     # get assets from DocDB:
     docdb_asset_ids = (
