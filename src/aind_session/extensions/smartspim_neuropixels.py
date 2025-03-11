@@ -272,7 +272,7 @@ class NeuroglancerState:
         updated_asset = aind_session.utils.codeocean_utils.wait_until_ready(
             data_asset=asset,
             check_files=True,
-            timeout=60,
+            timeout=120,
         )
         logger.debug(f"Asset {updated_asset.name} is ready")
         return updated_asset
