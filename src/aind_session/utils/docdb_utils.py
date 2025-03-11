@@ -25,8 +25,11 @@ DEFAULT_DOCDB_RETRY = urllib3.Retry(
     allowed_methods=["GET", "POST", "DELETE"],
 )
 
+
 @functools.cache
-def get_docdb_api_client(retries: int | urllib3.Retry = DEFAULT_DOCDB_RETRY, **kwargs) -> aind_data_access_api.document_db.MetadataDbClient:
+def get_docdb_api_client(
+    retries: int | urllib3.Retry = DEFAULT_DOCDB_RETRY, **kwargs
+) -> aind_data_access_api.document_db.MetadataDbClient:
     """
     Return a MetadataDbClient instance, passing any kwargs supplied.
 
@@ -40,12 +43,16 @@ def get_docdb_api_client(retries: int | urllib3.Retry = DEFAULT_DOCDB_RETRY, **k
     kwargs.setdefault("collection", "data_assets")
     if "session" not in kwargs:
         session = requests.Session()
-        session.mount(prefix="https://", adapter=requests.adapters.HTTPAdapter(max_retries=retries))
+        session.mount(
+            prefix="https://",
+            adapter=requests.adapters.HTTPAdapter(max_retries=retries),
+        )
         kwargs["session"] = session
     t0 = time.time()
     client = aind_data_access_api.document_db.MetadataDbClient(**kwargs)
     logger.debug(f"Initialized DocumentDB client in {time.time() - t0:.2f} s")
     return client
+
 
 @functools.cache
 def get_subject_docdb_records(

@@ -1,5 +1,5 @@
 """
-    User-friendly tools for accessing paths, metadata and assets related to AIND sessions.
+User-friendly tools for accessing paths, metadata and assets related to AIND sessions.
 """
 
 import doctest

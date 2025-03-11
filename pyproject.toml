@@ -14,7 +14,7 @@ dependencies = [
     "tzdata>=2024.2",
     "aind-codeocean-pipeline-monitor>=0.5.2",
 ]
-version = "0.3.15"
+version = "0.3.16"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
