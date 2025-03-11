@@ -1,3 +1,5 @@
+# mypy: disable-error-code=unused-ignore
+# types-requests has compatibility issue with boto3 https://github.com/python/typeshed/issues/10825
 from __future__ import annotations
 
 import functools
@@ -8,8 +10,8 @@ from collections.abc import Mapping
 from typing import Any
 
 import aind_data_access_api.document_db
-import requests
-import requests.adapters
+import requests  # type: ignore # to avoid checking types/installing types-requests
+import requests.adapters  # type: ignore # to avoid checking types/installing types-requests
 import urllib3
 
 import aind_session.utils.codeocean_utils
