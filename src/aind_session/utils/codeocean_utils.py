@@ -697,12 +697,18 @@ def get_subject_data_assets(
     )
     co_asset_ids = {asset.id for asset in from_co}
     # get assets from DocDB:
-    docdb_asset_ids = (
-        aind_session.utils.docdb_utils.get_codeocean_data_asset_ids_from_docdb(
-            subject_id=subject_id,
-            ttl_hash=ttl_hash,
+    try:
+        docdb_asset_ids = (
+            aind_session.utils.docdb_utils.get_codeocean_data_asset_ids_from_docdb(
+                subject_id=subject_id,
+                ttl_hash=ttl_hash,
+            )
         )
-    )
+    except requests.exceptions.RequestException as exc:
+        logger.warning(
+            f"Failed to get data assets for {subject_id=} from DocDB: {exc=!r}"
+        )
+        docdb_asset_ids = []
     from_docdb = []
     if docdb_asset_ids:
         for id_ in docdb_asset_ids:
