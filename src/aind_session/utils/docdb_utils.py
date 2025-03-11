@@ -8,14 +8,23 @@ from collections.abc import Mapping
 from typing import Any
 
 import aind_data_access_api.document_db
+import requests
+import requests.adapters
+import urllib3
 
 import aind_session.utils.codeocean_utils
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_DOCDB_RETRY = urllib3.Retry(
+    total=5,
+    backoff_factor=1,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["GET", "POST", "DELETE"],
+)
 
 @functools.cache
-def get_docdb_api_client(**kwargs) -> aind_data_access_api.document_db.MetadataDbClient:
+def get_docdb_api_client(retries: int | urllib3.Retry = DEFAULT_DOCDB_RETRY, **kwargs) -> aind_data_access_api.document_db.MetadataDbClient:
     """
     Return a MetadataDbClient instance, passing any kwargs supplied.
 
@@ -27,44 +36,15 @@ def get_docdb_api_client(**kwargs) -> aind_data_access_api.document_db.MetadataD
     kwargs.setdefault("host", "api.allenneuraldynamics.org")
     kwargs.setdefault("database", "metadata_index")
     kwargs.setdefault("collection", "data_assets")
+    if "session" not in kwargs:
+        session = requests.Session()
+        session.mount(prefix="https://", adapter=requests.adapters.HTTPAdapter(max_retries=retries))
+        kwargs["session"] = session
     t0 = time.time()
     client = aind_data_access_api.document_db.MetadataDbClient(**kwargs)
     logger.debug(f"Initialized DocumentDB client in {time.time() - t0:.2f} s")
     return client
 
-
-def _retry_on_503(max_retries=5, backoff_factor=0.5):
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            retries = 0
-            while retries < max_retries:
-                try:
-                    return func(*args, **kwargs)
-                except (
-                    Exception
-                ) as exc:  # docdb client currently (Dec 2024) returns ValueError for everything, but might be changed
-                    if "503" in str(exc):
-                        logger.debug(
-                            f"DocumentDB client encountered error: {exc}. Retrying ({retries + 1}/{max_retries})"
-                        )
-                        retries += 1
-                        last_exception = exc
-                        time.sleep(backoff_factor * 2**retries)
-                    else:
-                        raise
-            else:
-                logger.error(
-                    "DocumentDB client encountered error and max retries exceeded"
-                )
-                raise last_exception
-
-        return wrapper
-
-    return decorator
-
-
-@_retry_on_503()
 @functools.cache
 def get_subject_docdb_records(
     subject_id: str | int,
@@ -94,7 +74,6 @@ def get_subject_docdb_records(
     return tuple(records)
 
 
-@_retry_on_503()
 @functools.cache
 def get_docdb_record(
     data_asset_name_or_id: str | uuid.UUID,
@@ -181,7 +160,6 @@ def get_docdb_record(
     return records[-1]
 
 
-@_retry_on_503()
 @functools.cache
 def get_codeocean_data_asset_ids_from_docdb(
     partial_name: str | None = None,
@@ -194,9 +172,9 @@ def get_codeocean_data_asset_ids_from_docdb(
     Examples
     --------
     >>> get_codeocean_data_asset_ids_from_docdb('SmartSPIM_738819')[0]
-    '797117df-b890-44bc-899e-b62de401ff08'
+    '537f2e0f-631a-4ac3-9f6f-1972feb11892'
     >>> get_codeocean_data_asset_ids_from_docdb(subject_id=738819)[0]
-    '797117df-b890-44bc-899e-b62de401ff08'
+    '537f2e0f-631a-4ac3-9f6f-1972feb11892'
     >>> get_codeocean_data_asset_ids_from_docdb('ecephys_676909_2023-12-13_13-43-40')[0]
     '1e11bdf5-b452-4fd9-bbb1-48383a9b0842'
     """

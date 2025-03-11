@@ -10,7 +10,7 @@ dependencies = [
     "codeocean>=0.3.0",
     "npc-io>=0.1.30",
     "npc-session>=0.1.39",
-    "aind-data-access-api[docdb]>=0.14.0",
+    "aind-data-access-api>=1.0.0",
     "tzdata>=2024.2",
     "aind-codeocean-pipeline-monitor>=0.5.2",
 ]
@@ -121,7 +121,7 @@ exclude_also = [
 addopts = [
     "--import-mode=importlib",
     "--doctest-modules",
-    "--ignore-glob=*scripts*,*examples*,*docs*",
+    "--ignore-glob=*scripts*,*examples*,*docs*,*extensions*",
     "--cov",
     "--cov-report=xml",
     "--cov-config=pyproject.toml",
