@@ -350,7 +350,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         Examples
         --------
 
-        >>> aind_session.ecephys.is_sorting_analyzer_asset('fc327291-0689-4e39-bca4-9d0ce56ebd4f')
+        >>> aind_session.ecephys.is_sorting_analyzer_asset('616375f1-836b-4187-823f-3457f07b7223')
         True
         >>> aind_session.ecephys.is_sorting_analyzer_asset('1e11bdf5-b452-4fd9-bbb1-48383a9b0842')
         False
@@ -680,7 +680,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         --------
 
         - processing.json['processing_pipeline']['data_processes'][index]['parameters']['sorter_name']:
-        >>> aind_session.ecephys.get_sorter_name('921a186a-d8ff-4efc-8e1a-891fde8cd394')
+        >>> aind_session.ecephys.get_sorter_name('d50a3447-7f12-4da7-83c5-845744c4d4f9')
         'kilosort2_5'
 
         - processing.json['processing_pipeline']['data_processes'][index]['parameters']['sorter_name']:
