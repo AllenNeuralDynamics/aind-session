@@ -9,7 +9,7 @@ name: Run scheduled test
 
 on:
   schedule:
-    - cron: '0 0 * * 2,5' # every day at midnight (UTC)
+    - cron: '0 0 * * 2,5' # every Tuesday and Friday at midnight UTC
   workflow_dispatch:  # adds a 'Run Workflow' button for manual launching
 
 jobs:
