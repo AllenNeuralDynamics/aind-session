@@ -23,7 +23,8 @@ import urllib3
 try:
     from codeocean.error import Error as CodeOceanError
 except ImportError:
-    CodeOceanError = requests.HTTPError
+    class CodeOceanError(requests.HTTPError):
+        pass
 
 import aind_session.utils
 import aind_session.utils.docdb_utils
@@ -37,6 +38,12 @@ DEFAULT_CO_RETRY = urllib3.Retry(
     allowed_methods=["HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS", "TRACE"],
 )
 
+def _get_status(exc: CodeOceanError | requests.HTTPError) -> int:
+    if isinstance(exc, requests.HTTPError):
+        return exc.response.status_code
+    else:  # the real Error from codeocean sdk is not a subclass of requests.HTTPError
+        assert isinstance(exc, CodeOceanError)
+        return exc.status_code
 
 @functools.cache
 def get_codeocean_client(
@@ -92,8 +99,9 @@ def get_codeocean_client(
                     favorite=False,
                 )
             )
-        except requests.HTTPError as exc:
-            if exc.response.status_code == 401:
+        except (requests.HTTPError, CodeOceanError) as exc:
+            status_code = _get_status(exc)
+            if status_code == 401:
                 raise ValueError(
                     "CodeOcean API token was found in environment variables, but does not have permissions to read datasets: check `CODE_OCEAN_API_TOKEN`"
                 ) from None
@@ -193,8 +201,9 @@ def get_codeocean_model(
         return get_codeocean_client().computations.get_computation(
             get_normalized_uuid(asset_or_computation_id)
         )
-    except requests.HTTPError as exc:
-        if exc.response.status_code == 404:
+    except (requests.HTTPError, CodeOceanError) as exc:
+        status_code = _get_status(exc)
+        if status_code == 404:
             raise ValueError(
                 f"No data asset or computation found matching ID {asset_or_computation_id}"
             ) from None
@@ -223,8 +232,9 @@ def get_data_asset_model(
         return get_codeocean_client().data_assets.get_data_asset(
             get_normalized_uuid(asset_id_or_model)
         )
-    except requests.HTTPError as exc:
-        if exc.response.status_code == 404:
+    except (requests.HTTPError, CodeOceanError) as exc:
+        status_code = _get_status(exc)
+        if status_code == 404:
             raise ValueError(
                 f"No data asset found matching ID {asset_id_or_model}"
             ) from exc
@@ -245,8 +255,9 @@ def sort_by_created(
     for id_or_model in ids_or_models:
         try:
             model = get_codeocean_model(id_or_model)
-        except requests.HTTPError as exc:
-            if exc.response.status_code == 401:
+        except (requests.HTTPError, CodeOceanError) as exc:
+            status_code = _get_status(exc)
+            if status_code in (401, 404):
                 logger.info(
                     f"Skipping {id_or_model} as it is not accessible with current credentials"
                 )
@@ -720,18 +731,14 @@ def get_subject_data_assets(
                 continue
             try:
                 asset = get_data_asset_model(id_)
-            except requests.HTTPError as exc:
-                if exc.response.status_code == 401:
+            except (requests.HTTPError, CodeOceanError) as exc:
+                status_code = _get_status(exc)
+                if status_code in (401, 404):
                     logger.warning(
                         f"Not authorized to access data asset ID obtained from DocDB: {subject_id=}, {id_=}"
                     )
                     continue
                 raise
-            except CodeOceanError as exc:
-                logger.warning(
-                    f"Data asset from DocDB not accessible ({subject_id=}, {id_=}): {exc!r}"
-                )
-                continue
             else:
                 from_docdb.append(asset)
     assets = from_co + tuple(from_docdb)
