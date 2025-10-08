@@ -16,6 +16,7 @@ import codeocean
 import codeocean.components
 import codeocean.computation
 import codeocean.data_asset
+import codeocean.error
 import npc_session
 import requests  # type: ignore # to avoid checking types/installing types-requests
 import upath
@@ -723,6 +724,11 @@ def get_subject_data_assets(
                     )
                     continue
                 raise
+            except codeocean.error.Error as exc:
+                logger.warning(
+                    f"Data asset from DocDB not accessible ({subject_id=}, {id_=}): {exc!r}"
+                )
+                continue
             else:
                 from_docdb.append(asset)
     assets = from_co + tuple(from_docdb)
