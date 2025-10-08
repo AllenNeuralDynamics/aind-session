@@ -16,11 +16,14 @@ import codeocean
 import codeocean.components
 import codeocean.computation
 import codeocean.data_asset
-import codeocean.error
 import npc_session
 import requests  # type: ignore # to avoid checking types/installing types-requests
 import upath
 import urllib3
+try:
+    from codeocean.error import Error as CodeOceanError
+except ImportError:
+    CodeOceanError = requests.HTTPError
 
 import aind_session.utils
 import aind_session.utils.docdb_utils
@@ -724,7 +727,7 @@ def get_subject_data_assets(
                     )
                     continue
                 raise
-            except codeocean.error.Error as exc:
+            except CodeOceanError as exc:
                 logger.warning(
                     f"Data asset from DocDB not accessible ({subject_id=}, {id_=}): {exc!r}"
                 )
