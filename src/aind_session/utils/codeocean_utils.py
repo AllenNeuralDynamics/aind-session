@@ -20,11 +20,14 @@ import npc_session
 import requests  # type: ignore # to avoid checking types/installing types-requests
 import upath
 import urllib3
+
 try:
     from codeocean.error import Error as CodeOceanError
 except ImportError:
+
     class CodeOceanError(requests.HTTPError):
         pass
+
 
 import aind_session.utils
 import aind_session.utils.docdb_utils
@@ -38,12 +41,14 @@ DEFAULT_CO_RETRY = urllib3.Retry(
     allowed_methods=["HEAD", "GET", "PUT", "POST", "DELETE", "OPTIONS", "TRACE"],
 )
 
+
 def _get_status(exc: CodeOceanError | requests.HTTPError) -> int:
     if isinstance(exc, requests.HTTPError):
         return exc.response.status_code
-    else:  # the real Error from codeocean sdk is not a subclass of requests.HTTPError
+    else:  # the real exception from codeocean sdk is not a subclass of requests.HTTPError
         assert isinstance(exc, CodeOceanError)
         return exc.status_code
+
 
 @functools.cache
 def get_codeocean_client(
