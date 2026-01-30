@@ -67,7 +67,6 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         DBHUB_API_KEY: ${{ secrets.DBHUB_API_KEY }}
         CODE_OCEAN_API_TOKEN: ${{ secrets.CODE_OCEAN_API_TOKEN }}
-        CODE_OCEAN_DOMAIN: ${{ secrets.CODE_OCEAN_DOMAIN }}
       run: |
         mkdir .mypy_cache   
         uv run task test
