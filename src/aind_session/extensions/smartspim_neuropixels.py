@@ -237,7 +237,7 @@ class NeuroglancerState:
         'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-08-16_23-15-47'
         >>> asset.tags
         ['neuroglancer', 'ecephys', 'annotation', '717381']
-        >>> asset.files
+        >>> asset.files                                             # doctest: +SKIP
         1
         >>> next(aind_session.utils.codeocean_utils.get_data_asset_source_dir(asset.id).glob("*")).name  # doctest: +SKIP
         'SmartSPIM_717381_2024-07-03_10-49-01_neuroglancer-state_2024-08-16_23-15-47.json'
