@@ -6,7 +6,8 @@ import functools
 import itertools
 import json
 import logging
-from typing import ClassVar, Literal
+from collections.abc import Iterator
+from typing import Any, ClassVar, Literal
 
 import codeocean.computation
 import codeocean.data_asset
@@ -17,6 +18,42 @@ import aind_session.extension
 import aind_session.utils.codeocean_utils
 
 logger = logging.getLogger(__name__)
+
+
+def _iter_processing_data_processes(
+    data_processes: object,
+) -> Iterator[dict[str, Any]]:
+    if not isinstance(data_processes, list):
+        return
+    for data_process in data_processes:
+        if isinstance(data_process, dict):
+            yield data_process
+        elif isinstance(data_process, list):
+            yield from _iter_processing_data_processes(data_process)
+
+
+def _is_spike_sorting_data_process(data_process: dict[str, Any]) -> bool:
+    process_name = data_process.get("name")
+    return isinstance(process_name, str) and process_name.startswith("Spike sorting")
+
+
+def _get_sorter_name_from_data_process(
+    data_process: dict[str, Any],
+) -> str | None:
+    for container in (data_process, data_process.get("code")):
+        if not isinstance(container, dict):
+            continue
+        parameters = container.get("parameters")
+        if not isinstance(parameters, dict):
+            continue
+        if "sorter_name" in parameters:
+            sorter_name = parameters["sorter_name"]
+            if not isinstance(sorter_name, str):
+                raise TypeError(
+                    f"Expected sorter_name to be a string, got {sorter_name!r}"
+                )
+            return sorter_name
+    return None
 
 
 @aind_session.extension.register_namespace("ecephys")
@@ -691,6 +728,11 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         >>> aind_session.ecephys.get_sorter_name('205fc2d0-5f00-468f-a82d-47c94afcd40c')
         'kilosort2_5'
 
+        - processing.json['data_processes'][index]['code']['parameters']
+          ['sorter_name']:
+        >>> aind_session.ecephys.get_sorter_name('82894efb-2302-4e4c-927f-e2d7d477690e')
+        'kilosort4'
+
         - spikesorted/si_folder.json['annotations']['__sorting_info__']['params']['sorter_name']:
         >>> aind_session.ecephys.get_sorter_name('bd0ad804-4a33-4613-9d6c-6281e442bade')
         'kilosort2_5'
@@ -727,29 +769,20 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                     "data_processes" in processing
                 ), f"Fix method of getting sorter name: 'data_processes' not in processing.json for {sorted_data_asset_id=}"
                 data_processes = processing["data_processes"]
-            for p in data_processes:
-                if isinstance(p, list):
-                    sorting: dict = next(
-                        (d for d in p if d.get("name") == "Spike sorting"),
-                        {},
+            for data_process in _iter_processing_data_processes(data_processes):
+                if not _is_spike_sorting_data_process(data_process):
+                    continue
+                if (
+                    sorter_name := _get_sorter_name_from_data_process(data_process)
+                ) is None:
+                    raise KeyError(
+                        "No 'sorter_name' key found in sorting parameters in processing.json"
                     )
-                    break
-                else:
-                    if p.get("name") == "Spike sorting":
-                        sorting = p
-                        break
+                break
             else:
                 raise AssertionError(
                     f"Fix method of getting sorter name: 'sorter_name' is in processing.json, but not in expected location for {sorted_data_asset_id=}"
                 )
-            assert (
-                "parameters" in sorting
-            ), f"Fix method of getting sorter name: 'parameters' not in 'Spike sorting' data process in processing.json for {sorted_data_asset_id=}"
-            if "sorter_name" not in sorting["parameters"]:
-                raise KeyError(
-                    "No 'sorter_name' key found in sorting parameters in processing.json"
-                )
-            sorter_name: str = sorting["parameters"]["sorter_name"]
             logger.debug(f"Found sorter_name key in processing.json: {sorter_name}")
             return sorter_name
 
