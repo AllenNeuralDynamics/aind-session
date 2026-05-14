@@ -8,7 +8,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.16...HEAD)</small>
+<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.21...HEAD)</small>
+
+<!-- insertion marker -->
+## [v0.3.21](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.21) - 2026-01-30
+
+<small>[Compare with v0.3.16](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.16...v0.3.21)</small>
 
 ### Fixed
 
@@ -20,7 +25,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Remove pdm from Actions ([159f25c](https://github.com/AllenNeuralDynamics/aind-session/commit/159f25ca634770fcac5aa4fe1bd69286ef7a0895) by bjhardcastle).
 
-<!-- insertion marker -->
 ## [v0.3.16](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.16) - 2025-03-11
 
 <small>[Compare with v0.3.15](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.15...v0.3.16)</small>
