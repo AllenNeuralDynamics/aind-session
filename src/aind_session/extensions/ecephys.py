@@ -287,10 +287,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         }
         # sometimes values are stored as mm, sometimes microns - need to detect:
         scale = 1000.0 if all(abs(v) < 10 for v in coordinates.values()) else 1.0
-        if len(coordinates) == 3:
-            parsed["ccf_ap"] = coordinates["y"] * scale
-            parsed["ccf_ml"] = coordinates["x"] * -scale
-            parsed["ccf_dv"] = coordinates["z"] * -scale
+        parsed["ccf_ap"] = abs(coordinates["y"] * scale)
+        parsed["ccf_ml"] = abs(coordinates["x"] * scale)
+        parsed["ccf_dv"] = abs(coordinates["z"] * scale)
         return parsed
 
     @staticmethod
