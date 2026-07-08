@@ -60,7 +60,7 @@ class Session:
 
     >>> session = Session('behavior_717121_2024-06-16_11-39-34')
     >>> session.raw_data_dir.as_posix()
-    's3://aind-private-data-prod-o5171v/behavior_717121_2024-06-16_11-39-34'
+    's3://aind-open-data/behavior_717121_2024-06-16_11-39-34'
 
     >>> session = Session('SmartSPIM_123456_2024-07-20_21-47-21')
     >>> session.raw_data_dir.as_posix()

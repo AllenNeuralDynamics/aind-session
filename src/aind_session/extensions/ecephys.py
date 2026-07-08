@@ -111,11 +111,6 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         The annotations are stored as QC evaluations on the latest derived ecephys
         DocDB asset, not as separate DocDB records per probe.
 
-        For a given channel record with xyz coordinates, convert to ccf with:
-            ccf_ap: y * 1000
-            ccf_ml: x * -1000
-            ccf_dv: z * -1000
-
         Examples
         --------
         >>> session = aind_session.Session('ecephys_795555_2025-08-26_11-29-20')
@@ -123,7 +118,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         >>> sorted(annotations)
         ['ProbeA_0', 'ProbeB_0', 'ProbeC_0', 'ProbeD_0', 'ProbeE_0']
         >>> annotations['ProbeA_0']['ccf_channel_results']['channel_0']
-        {'x': -4.172946453094482, 'y': 3.727851629257202, 'z': -5.629019260406494, 'axial': 0.0, 'lateral': 16.0, 'brain_region_id': 698, 'brain_region': 'OLF', 'channel_number': 0, 'ccf_ap': 3727.851629257202, 'ccf_ml': 4172.946453094482, 'ccf_dv': 5629.019260406494}
+        {'x': -7954.076975130847, 'y': 8945.146863333603, 'z': -3707.1507997079916, 'axial': 0.0, 'lateral': 16.0, 'brain_region_id': 698, 'brain_region': 'OLF', 'channel_number': 0, 'ccf_ap': 8945.146863333603, 'ccf_ml': 7954.076975130847, 'ccf_dv': 3707.1507997079916}
         """
         return EcephysExtension.get_latest_ibl_annotations(self._base.id)
 
