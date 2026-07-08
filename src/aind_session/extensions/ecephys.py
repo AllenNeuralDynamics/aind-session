@@ -135,7 +135,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         docdb_api_client = aind_session.utils.docdb_utils.get_docdb_api_client()
 
         records = docdb_api_client.retrieve_docdb_records(
-            filter_query= {
+            filter_query={
                 "data_description.data_level": "derived",
                 "data_description.name": {"$regex": session_id},
                 "data_description.modality.abbreviation": "ecephys",
@@ -179,11 +179,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                 previous["created"]
             ) >= EcephysExtension._parse_docdb_timestamp(evaluation.get("created")):
                 continue
-            latest_by_probe[probe] = (
-                EcephysExtension._format_ibl_alignment_annotation(
-                    record=latest_record,
-                    evaluation=evaluation,
-                )
+            latest_by_probe[probe] = EcephysExtension._format_ibl_alignment_annotation(
+                record=latest_record,
+                evaluation=evaluation,
             )
 
         if not latest_by_probe:
@@ -313,7 +311,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         if value is None:
             return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
         if isinstance(value, datetime.datetime):
-            return value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)
+            return (
+                value if value.tzinfo else value.replace(tzinfo=datetime.timezone.utc)
+            )
 
         text = str(value).strip().replace(" ", "T")
         if text.endswith("Z"):
@@ -322,7 +322,11 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             timestamp = datetime.datetime.fromisoformat(text)
         except ValueError:
             return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
-        return timestamp if timestamp.tzinfo else timestamp.replace(tzinfo=datetime.timezone.utc)
+        return (
+            timestamp
+            if timestamp.tzinfo
+            else timestamp.replace(tzinfo=datetime.timezone.utc)
+        )
 
     @property
     def clipped_dir(self) -> upath.UPath:

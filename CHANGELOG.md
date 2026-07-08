@@ -8,9 +8,17 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.21...HEAD)</small>
+<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.22...HEAD)</small>
+
+### Added
+
+- Add ibl annotation property ([c2b32ac](https://github.com/AllenNeuralDynamics/aind-session/commit/c2b32accfd8d26a8d4002f8274e02b3dff960884) by bjhardcastle).
 
 <!-- insertion marker -->
+## [v0.3.22](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.22) - 2026-05-14
+
+<small>[Compare with v0.3.21](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.21...v0.3.22)</small>
+
 ## [v0.3.21](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.21) - 2026-01-30
 
 <small>[Compare with v0.3.16](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.16...v0.3.21)</small>
