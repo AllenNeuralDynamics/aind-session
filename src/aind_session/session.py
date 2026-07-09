@@ -56,7 +56,7 @@ class Session:
     Should be able to handle all platforms:
     >>> session = Session('multiplane-ophys_721291_2024-05-08_08-05-54')
     >>> session.raw_data_dir.as_posix()
-    's3:///multiplane-ophys_721291_2024-05-08_08-05-54'
+    's3://aind-private-data-prod-o5171v/multiplane-ophys_721291_2024-05-08_08-05-54'
 
     >>> session = Session('behavior_717121_2024-06-16_11-39-34')
     >>> session.raw_data_dir.as_posix()
