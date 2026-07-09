@@ -43,7 +43,7 @@ docdb = [
 
 [[package]]
 name = "aind-session"
-version = "0.3.23"
+version = "0.3.24"
 source = { editable = "." }
 dependencies = [
     { name = "aind-codeocean-pipeline-monitor" },

@@ -8,13 +8,27 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.22...HEAD)</small>
+<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.23...HEAD)</small>
+
+### Added
+
+- Add bucket ([78d50d8](https://github.com/AllenNeuralDynamics/aind-session/commit/78d50d8db052c15795fc5886703cea3b6a32548e) by bjhardcastle).
+
+### Fixed
+
+- Fix dockets ([81135cb](https://github.com/AllenNeuralDynamics/aind-session/commit/81135cbc32949f13b864d2c85a181fd42a73f439) by Ben Hardcastle).
+- Fix doctest ([377565f](https://github.com/AllenNeuralDynamics/aind-session/commit/377565f534e70bd5147034939c0cf93a5775564e) by bjhardcastle).
+- Fix ccf sign ([881dff9](https://github.com/AllenNeuralDynamics/aind-session/commit/881dff909f409859fe63f5106814f73f736ebbf2) by bjhardcastle).
+
+<!-- insertion marker -->
+## [v0.3.23](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.23) - 2026-07-08
+
+<small>[Compare with v0.3.22](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.22...v0.3.23)</small>
 
 ### Added
 
 - Add ibl annotation property ([c2b32ac](https://github.com/AllenNeuralDynamics/aind-session/commit/c2b32accfd8d26a8d4002f8274e02b3dff960884) by bjhardcastle).
 
-<!-- insertion marker -->
 ## [v0.3.22](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.22) - 2026-05-14
 
 <small>[Compare with v0.3.21](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.21...v0.3.22)</small>
