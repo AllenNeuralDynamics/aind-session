@@ -12,6 +12,7 @@ S3_DATA_BUCKET_NAMES = (
     "codeocean-s3datasetsbucket-1u41qdg42ur9",
     "aind-private-data-prod-o5171v",
     "aind-open-data-prod-o5171v",
+    "aind-open-data",
     "aibs-behavior-data",
     "aind-ephys-data",
     "aind-ophys-data",
