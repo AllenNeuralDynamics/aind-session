@@ -7,7 +7,7 @@ import functools
 import itertools
 import json
 import logging
-from collections.abc import Iterator, Mapping
+from collections.abc import Mapping
 from typing import Any, ClassVar, Literal
 
 import codeocean.computation
@@ -104,33 +104,35 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     DEFAULT_TRIGGER_CAPSULE_ID: ClassVar[str] = "eb5a26e4-a391-4d79-9da5-1ab65b71253f"
     IBL_ALIGNMENT_EVALUATION_PREFIX: ClassVar[str] = "Probe Alignment for"
 
-    @property
-    def latest_ibl_annotations(self) -> dict[str, dict[str, Any]]:
-        """Latest IBL probe-alignment annotations in DocDB, keyed by probe name.
-
-        The annotations are stored as QC evaluations on the latest derived ecephys
-        DocDB asset, not as separate DocDB records per probe.
-
-        Examples
-        --------
-        >>> session = aind_session.Session('ecephys_795555_2025-08-26_11-29-20')
-        >>> annotations = session.ecephys.latest_ibl_annotations
-        >>> sorted(annotations)
-        ['ProbeA_0', 'ProbeB_0', 'ProbeC_0', 'ProbeD_0', 'ProbeE_0']
-        >>> annotations['ProbeA_0']['ccf_channel_results']['channel_0']
-        {'x': -7954.076975130847, 'y': 8945.146863333603, 'z': -3707.1507997079916, 'axial': 0.0, 'lateral': 16.0, 'brain_region_id': 698, 'brain_region': 'OLF', 'channel_number': 0, 'ccf_ap': 8945.146863333603, 'ccf_ml': 7954.076975130847, 'ccf_dv': 3707.1507997079916}
-        """
-        return EcephysExtension.get_latest_ibl_annotations(self._base.id)
-
     @staticmethod
     def get_latest_ibl_annotations(
         session_id: str,
-    ) -> dict[str, dict[str, Any]]:
+        as_ccf_records: bool = False,
+    ) -> dict[str, dict[str, Any]] | list[dict[str, Any]]:
         """Return the latest IBL probe-alignment annotations for a session.
 
-        Results are keyed by probe name, such as ``ProbeA_0``. Each value includes
-        asset metadata, evaluation metadata, and the parsed curation payload written
-        by the IBL ephys alignment GUI.
+        By default, results are the raw parsed curation payloads written by the
+        IBL ephys alignment GUI, keyed by probe name, such as ``ProbeA_0``.
+
+        When ``as_ccf_records`` is ``True``, results are flattened into a list of
+        channel records across all probes. Each record includes the raw channel
+        annotation values, ``device_name``, ``channel_number``, and derived CCF
+        coordinate keys.
+
+        Examples
+        --------
+        >>> session_id = 'ecephys_795555_2025-08-26_11-29-20'
+        >>> annotations = aind_session.ecephys.get_latest_ibl_annotations(session_id)
+        >>> sorted(annotations)
+        ['ProbeA_0', 'ProbeB_0', 'ProbeC_0', 'ProbeD_0', 'ProbeE_0']
+        >>> annotations['ProbeA_0']['channel_results']['channel_0']
+        {'x': -7954.076975130847, ..., 'brain_region': 'OLF'}
+
+        >>> records = aind_session.ecephys.get_latest_ibl_annotations(
+        ...     session_id, as_ccf_records=True
+        ... )
+        >>> records[0]
+        {'x': -7954.076975130847, ..., 'device_name': 'ProbeA_0'}
         """
         docdb_api_client = aind_session.utils.docdb_utils.get_docdb_api_client()
 
@@ -165,23 +167,36 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             )
 
         latest_record = records[-1]
-        latest_by_probe: dict[str, dict[str, Any]] = {}
-        for evaluation in EcephysExtension._iter_ibl_alignment_evaluations(
-            latest_record, session_id
-        ):
-            probe = EcephysExtension._get_probe_name_from_alignment_evaluation_name(
-                evaluation.get("name", ""), session_id
-            )
-            if probe is None:
+        latest_by_probe: dict[str, tuple[datetime.datetime, dict[str, Any]]] = {}
+
+        evaluations = latest_record["quality_control"]["evaluations"]
+        marker = f"{session_id}_"
+        for evaluation in evaluations:
+            evaluation_name = evaluation["name"]
+            if not (
+                isinstance(evaluation_name, str)
+                and evaluation_name.startswith(
+                    EcephysExtension.IBL_ALIGNMENT_EVALUATION_PREFIX
+                )
+                and session_id in evaluation_name
+                and marker in evaluation_name
+            ):
                 continue
+
+            probe = evaluation_name.rsplit(marker, maxsplit=1)[-1]
+            created = EcephysExtension._parse_docdb_timestamp(evaluation.get("created"))
             previous = latest_by_probe.get(probe)
-            if previous is not None and EcephysExtension._parse_docdb_timestamp(
-                previous["created"]
-            ) >= EcephysExtension._parse_docdb_timestamp(evaluation.get("created")):
+            if previous is not None and previous[0] >= created:
                 continue
-            latest_by_probe[probe] = EcephysExtension._format_ibl_alignment_annotation(
-                record=latest_record,
-                evaluation=evaluation,
+
+            metric = next(iter(evaluation["metrics"]))
+            annotation = json.loads(metric["value"]["curations"][-1])
+            if not isinstance(annotation, dict):
+                raise TypeError(f"Expected IBL annotation to be a dict: {annotation!r}")
+
+            latest_by_probe[probe] = (
+                created,
+                annotation,
             )
 
         if not latest_by_probe:
@@ -189,121 +204,51 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                 f"No IBL probe-alignment evaluations found in latest DocDB asset for {session_id!r}"
             )
 
-        return dict(sorted(latest_by_probe.items()))
-
-    @staticmethod
-    def _iter_ibl_alignment_evaluations(
-        record: dict[str, Any], session_id: str
-    ) -> Iterator[dict[str, Any]]:
-        evaluations = (record.get("quality_control") or {}).get("evaluations") or []
-        for evaluation in evaluations:
-            name = evaluation.get("name", "")
-            if (
-                isinstance(name, str)
-                and name.startswith(EcephysExtension.IBL_ALIGNMENT_EVALUATION_PREFIX)
-                and session_id in name
-            ):
-                yield evaluation
-
-    @staticmethod
-    def _get_probe_name_from_alignment_evaluation_name(
-        evaluation_name: str, session_id: str
-    ) -> str | None:
-        marker = f"{session_id}_"
-        if marker not in evaluation_name:
-            return None
-        return evaluation_name.rsplit(marker, maxsplit=1)[-1]
-
-    @staticmethod
-    def _format_ibl_alignment_annotation(
-        record: dict[str, Any], evaluation: dict[str, Any]
-    ) -> dict[str, Any]:
-        metric = next(iter(evaluation.get("metrics") or []), {})
-        value = metric.get("value") or {}
-        curation_history = value.get("curation_history") or []
-        latest_curation = curation_history[-1] if curation_history else {}
-        status_history = metric.get("status_history") or []
-        latest_status = status_history[-1] if status_history else {}
-        curation = EcephysExtension._parse_latest_curation(value)
-        channel_results = curation.get("channel_results")
-
-        return {
-            "asset_id": record.get("_id"),
-            "asset_name": record.get("name"),
-            "asset_data_description_name": (record.get("data_description") or {}).get(
-                "name"
-            ),
-            "asset_created": record.get("created"),
-            "asset_last_modified": record.get("last_modified"),
-            "name": evaluation.get("name"),
-            "created": evaluation.get("created"),
-            "latest_status": evaluation.get("latest_status"),
-            "curator": latest_curation.get("curator") or latest_status.get("evaluator"),
-            "curation_timestamp": latest_curation.get("timestamp"),
-            "channel_results": channel_results,
-            "previous_alignments": curation.get("previous_alignments"),
-            "ccf_channel_results": (
-                EcephysExtension._parse_ibl_annotation_channel_records(channel_results)
-                if isinstance(channel_results, Mapping)
-                else curation.get("ccf_channel_results")
-            ),
+        annotations = {
+            probe: annotation
+            for probe, (_, annotation) in sorted(latest_by_probe.items())
         }
+        if as_ccf_records:
+            ccf_records: list[dict[str, Any]] = []
+            for device_name, annotation in annotations.items():
+                channel_results = annotation["channel_results"]
+                if not isinstance(channel_results, Mapping):
+                    raise TypeError(
+                        f"Expected channel_results to be a mapping: {channel_results!r}"
+                    )
+                for channel_name, channel_record in channel_results.items():
+                    if not isinstance(channel_record, Mapping):
+                        raise TypeError(
+                            f"Expected channel record to be a mapping: {channel_record!r}"
+                        )
 
-    @staticmethod
-    def _parse_ibl_annotation_channel_records(
-        channel_results: Mapping[str, Any],
-    ) -> dict[str, dict[str, Any]]:
-        return {
-            str(channel_name): EcephysExtension.parse_ibl_annotation_channel_record(
-                str(channel_name), channel_record
-            )
-            for channel_name, channel_record in channel_results.items()
-            if isinstance(channel_record, Mapping)
-        }
+                    parsed = dict(channel_record)
+                    with contextlib.suppress(ValueError):
+                        parsed["channel_number"] = int(
+                            str(channel_name).rsplit("_", maxsplit=1)[-1]
+                        )
 
-    @staticmethod
-    def parse_ibl_annotation_channel_record(
-        channel_name: str, channel_record: Mapping[str, Any]
-    ) -> dict[str, Any]:
-        """Return an IBL annotation channel record with channel number and CCF coords.
-
-        ``x``, ``y``, and ``z`` values are stored in mm by the IBL ephys alignment
-        GUI. The returned CCF coordinates are in microns:
-        ``ccf_ap = y * 1000``, ``ccf_ml = x * -1000``, and
-        ``ccf_dv = z * -1000``.
-        """
-        parsed = dict(channel_record)
-        with contextlib.suppress(ValueError):
-            parsed["channel_number"] = int(channel_name.rsplit("_", maxsplit=1)[-1])
-
-        coordinates = {
-            key: value
-            for key, value in (
-                ("x", parsed.get("x")),
-                ("y", parsed.get("y")),
-                ("z", parsed.get("z")),
-            )
-            if isinstance(value, (int, float))
-        }
-        # sometimes values are stored as mm, sometimes microns - need to detect:
-        scale = 1000.0 if all(abs(v) < 10 for v in coordinates.values()) else 1.0
-        parsed["ccf_ap"] = abs(coordinates["y"] * scale)
-        parsed["ccf_ml"] = abs(coordinates["x"] * scale)
-        parsed["ccf_dv"] = abs(coordinates["z"] * scale)
-        return parsed
-
-    @staticmethod
-    def _parse_latest_curation(value: dict[str, Any]) -> dict[str, Any]:
-        curations = value.get("curations") or []
-        if not curations:
-            return {}
-        try:
-            curation = json.loads(curations[-1])
-        except json.JSONDecodeError:
-            return {}
-        if not isinstance(curation, dict):
-            return {}
-        return curation
+                    coordinates = {
+                        key: value
+                        for key, value in (
+                            ("x", parsed["x"]),
+                            ("y", parsed["y"]),
+                            ("z", parsed["z"]),
+                        )
+                        if isinstance(value, (int, float))
+                    }
+                    scale = (
+                        1000.0
+                        if all(abs(v) < 10 for v in coordinates.values())
+                        else 1.0
+                    )
+                    parsed["ccf_ap"] = abs(coordinates["y"] * scale)
+                    parsed["ccf_ml"] = abs(coordinates["x"] * scale)
+                    parsed["ccf_dv"] = abs(coordinates["z"] * scale)
+                    parsed["device_name"] = device_name
+                    ccf_records.append(parsed)
+            return ccf_records
+        return annotations
 
     @staticmethod
     def _parse_docdb_timestamp(value: object) -> datetime.datetime:
