@@ -124,7 +124,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         >>> session_id = 'ecephys_795555_2025-08-26_11-29-20'
         >>> annotations = aind_session.ecephys.get_latest_ibl_annotations(session_id)
         >>> sorted(annotations)
-        ['ProbeA_0', 'ProbeB_0', 'ProbeC_0', 'ProbeD_0', 'ProbeE_0']
+        ['ProbeA_0', 'ProbeB_0', 'ProbeC_0', 'ProbeD_0', 'ProbeE_0', 'ProbeF_0']
         >>> annotations['ProbeA_0']['channel_results']['channel_0']
         {'x': -7954.076975130847, ..., 'brain_region': 'OLF'}
 
