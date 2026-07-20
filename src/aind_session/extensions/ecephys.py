@@ -183,7 +183,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                     continue
 
                 probe = evaluation_name.rsplit(marker, maxsplit=1)[-1]
-                created = EcephysExtension._parse_docdb_timestamp(evaluation.get("created"))
+                created = EcephysExtension._parse_docdb_timestamp(
+                    evaluation.get("created")
+                )
                 previous = latest_by_probe.get(probe)
                 if previous is not None and previous[0] >= created:
                     continue
@@ -191,7 +193,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                 metric = next(iter(evaluation["metrics"]))
                 annotation = json.loads(metric["value"]["curations"][-1])
                 if not isinstance(annotation, dict):
-                    raise TypeError(f"Expected IBL annotation to be a dict: {annotation!r}")
+                    raise TypeError(
+                        f"Expected IBL annotation to be a dict: {annotation!r}"
+                    )
 
                 latest_by_probe[probe] = (
                     created,
