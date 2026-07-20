@@ -166,42 +166,41 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                 f"No IBL probe-alignment evaluations found in DocDB for {session_id!r}"
             )
 
-        latest_record = records[-1]
         latest_by_probe: dict[str, tuple[datetime.datetime, dict[str, Any]]] = {}
 
-        evaluations = latest_record["quality_control"]["evaluations"]
         marker = f"{session_id}_"
-        for evaluation in evaluations:
-            evaluation_name = evaluation["name"]
-            if not (
-                isinstance(evaluation_name, str)
-                and evaluation_name.startswith(
-                    EcephysExtension.IBL_ALIGNMENT_EVALUATION_PREFIX
+        for record in records:
+            for evaluation in record["quality_control"]["evaluations"]:
+                evaluation_name = evaluation["name"]
+                if not (
+                    isinstance(evaluation_name, str)
+                    and evaluation_name.startswith(
+                        EcephysExtension.IBL_ALIGNMENT_EVALUATION_PREFIX
+                    )
+                    and session_id in evaluation_name
+                    and marker in evaluation_name
+                ):
+                    continue
+
+                probe = evaluation_name.rsplit(marker, maxsplit=1)[-1]
+                created = EcephysExtension._parse_docdb_timestamp(evaluation.get("created"))
+                previous = latest_by_probe.get(probe)
+                if previous is not None and previous[0] >= created:
+                    continue
+
+                metric = next(iter(evaluation["metrics"]))
+                annotation = json.loads(metric["value"]["curations"][-1])
+                if not isinstance(annotation, dict):
+                    raise TypeError(f"Expected IBL annotation to be a dict: {annotation!r}")
+
+                latest_by_probe[probe] = (
+                    created,
+                    annotation,
                 )
-                and session_id in evaluation_name
-                and marker in evaluation_name
-            ):
-                continue
-
-            probe = evaluation_name.rsplit(marker, maxsplit=1)[-1]
-            created = EcephysExtension._parse_docdb_timestamp(evaluation.get("created"))
-            previous = latest_by_probe.get(probe)
-            if previous is not None and previous[0] >= created:
-                continue
-
-            metric = next(iter(evaluation["metrics"]))
-            annotation = json.loads(metric["value"]["curations"][-1])
-            if not isinstance(annotation, dict):
-                raise TypeError(f"Expected IBL annotation to be a dict: {annotation!r}")
-
-            latest_by_probe[probe] = (
-                created,
-                annotation,
-            )
 
         if not latest_by_probe:
             raise KeyError(
-                f"No IBL probe-alignment evaluations found in latest DocDB asset for {session_id!r}"
+                f"No IBL probe-alignment evaluations found in any DocDB asset for {session_id!r}"
             )
 
         annotations = {
