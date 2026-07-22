@@ -105,10 +105,10 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     IBL_ALIGNMENT_EVALUATION_PREFIX: ClassVar[str] = "Probe Alignment for"
 
     @staticmethod
-    def _infer_ccf_scale(channel_results: Mapping) -> float:
+    def _infer_ccf_scale(ccf_channel_results: Mapping) -> float:
         values = [
             abs(record[axis])
-            for record in channel_results.values()
+            for record in ccf_channel_results.values()
             for axis in ("x", "y", "z")
         ]
         max_value = max(values)
@@ -235,7 +235,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                     raise TypeError(
                         f"Expected ccf_channel_results to be a mapping: {ccf_channel_results!r}"
                     )
-                scale = EcephysExtension._infer_ccf_scale(channel_results)
+                scale = EcephysExtension._infer_ccf_scale(ccf_channel_results)
                 for channel_name, channel_record in ccf_channel_results.items():
                     if not isinstance(channel_record, Mapping):
                         raise TypeError(
