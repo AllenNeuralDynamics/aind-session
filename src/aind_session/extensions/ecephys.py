@@ -105,6 +105,22 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
     IBL_ALIGNMENT_EVALUATION_PREFIX: ClassVar[str] = "Probe Alignment for"
 
     @staticmethod
+    def _infer_ccf_scale(channel_results: Mapping) -> float:
+        values = [
+            abs(record[axis])
+            for record in channel_results.values()
+            for axis in ("x", "y", "z")
+        ]
+        max_value = max(values)
+    
+        if max_value < 20:       # LPS millimetres; CCF spans ~13.2 mm
+            return 1000.0
+        if max_value < 20_000:   # already micrometres
+            return 1.0
+    
+        raise ValueError(f"Invalid CCF coordinate magnitude: {max_value}")
+
+    @staticmethod
     def get_latest_ibl_annotations(
         session_id: str,
         as_ccf_records: bool = False,
@@ -214,12 +230,13 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         if as_ccf_records:
             ccf_records: list[dict[str, Any]] = []
             for device_name, annotation in annotations.items():
-                channel_results = annotation["channel_results"]
-                if not isinstance(channel_results, Mapping):
+                ccf_channel_results = annotation["ccf_channel_results"]
+                if not isinstance(ccf_channel_results, Mapping):
                     raise TypeError(
-                        f"Expected channel_results to be a mapping: {channel_results!r}"
+                        f"Expected ccf_channel_results to be a mapping: {ccf_channel_results!r}"
                     )
-                for channel_name, channel_record in channel_results.items():
+                scale = infer_ccf_scale(channel_results)
+                for channel_name, channel_record in ccf_channel_results.items():
                     if not isinstance(channel_record, Mapping):
                         raise TypeError(
                             f"Expected channel record to be a mapping: {channel_record!r}"
@@ -240,14 +257,9 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                         )
                         if isinstance(value, (int, float))
                     }
-                    scale = (
-                        1000.0
-                        if all(abs(v) < 10 for v in coordinates.values())
-                        else 1.0
-                    )
-                    parsed["ccf_ap"] = abs(coordinates["y"] * scale)
-                    parsed["ccf_ml"] = abs(coordinates["x"] * scale)
-                    parsed["ccf_dv"] = abs(coordinates["z"] * scale)
+                    parsed["ccf_ap"] = coordinates["y"] * scale
+                    parsed["ccf_ml"] = -coordinates["x"] * scale
+                    parsed["ccf_dv"] = -coordinates["z"] * scale
                     parsed["device_name"] = device_name
                     ccf_records.append(parsed)
             return ccf_records
