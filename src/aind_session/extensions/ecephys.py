@@ -235,7 +235,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
                     raise TypeError(
                         f"Expected ccf_channel_results to be a mapping: {ccf_channel_results!r}"
                     )
-                scale = infer_ccf_scale(channel_results)
+                scale = EcephysExtension.infer_ccf_scale(channel_results)
                 for channel_name, channel_record in ccf_channel_results.items():
                     if not isinstance(channel_record, Mapping):
                         raise TypeError(
