@@ -148,7 +148,7 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
         ...     session_id, as_ccf_records=True
         ... )
         >>> records[0]
-        {'x': -7933.268896065394, 'y': 8776.9523900287, 'z': -3895.4259052459756, 'axial': 0.0, 'lateral': 16.0, 'brain_region_id': 56, 'brain_region': 'ACB', 'channel_number': 0, 'ccf_ap': 8776.9523900287, 'ccf_ml': 7933.268896065394, 'ccf_dv': 3895.4259052459756, 'device_name': 'ProbeA_0'}
+        {'x': -4.235408306121826, 'y': 3.959097146987915, 'z': -5.8538970947265625, 'axial': 0.0, 'lateral': 16.0, 'brain_region_id': 56, 'brain_region': 'ACB', 'channel_number': 0, 'ccf_ap': 3959.097146987915, 'ccf_ml': 4235.408306121826, 'ccf_dv': 5853.8970947265625, 'device_name': 'ProbeA_0'}
         """
         docdb_api_client = aind_session.utils.docdb_utils.get_docdb_api_client()
 
