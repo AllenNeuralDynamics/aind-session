@@ -8,9 +8,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.24...HEAD)</small>
+<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.25...HEAD)</small>
+
+### Fixed
+
+- Fix typo ([4fd29ba](https://github.com/AllenNeuralDynamics/aind-session/commit/4fd29baf12ca1fef94f2d90f2525dbb19a1ff606) by Ben Hardcastle).
+- Fix previous ([4a83890](https://github.com/AllenNeuralDynamics/aind-session/commit/4a83890b5186c7f9027fcbf75e360f6fe51805eb) by Ben Hardcastle).
+- Fix CCF scale inference and channel results handling ([941b067](https://github.com/AllenNeuralDynamics/aind-session/commit/941b0676bd2f08d4b92d7c6c48a94af471f6744d) by Ben Hardcastle).
 
 <!-- insertion marker -->
+## [v0.3.25](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.25) - 2026-07-20
+
+<small>[Compare with v0.3.24](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.24...v0.3.25)</small>
+
 ## [v0.3.24](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.24) - 2026-07-09
 
 <small>[Compare with v0.3.23](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.23...v0.3.24)</small>

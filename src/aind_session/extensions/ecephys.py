@@ -112,12 +112,12 @@ class EcephysExtension(aind_session.extension.ExtensionBaseClass):
             for axis in ("x", "y", "z")
         ]
         max_value = max(values)
-    
-        if max_value < 20:       # LPS millimetres; CCF spans ~13.2 mm
+
+        if max_value < 20:  # LPS millimetres; CCF spans ~13.2 mm
             return 1000.0
-        if max_value < 20_000:   # already micrometres
+        if max_value < 20_000:  # already micrometres
             return 1.0
-    
+
         raise ValueError(f"Invalid CCF coordinate magnitude: {max_value}")
 
     @staticmethod
