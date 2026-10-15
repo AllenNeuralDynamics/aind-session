@@ -22,7 +22,7 @@ DEFAULT_DOCDB_RETRY = urllib3.Retry(
     total=5,
     backoff_factor=1,
     status_forcelist=[429, 500, 502, 503, 504],
-    allowed_methods=["GET", "POST", "DELETE"],
+    allowed_methods=["GET", "DELETE"],
 )
 
 

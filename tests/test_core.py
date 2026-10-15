@@ -3,8 +3,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import urllib3
 
 import aind_session.utils.codeocean_utils
+import aind_session.utils.docdb_utils
 from aind_session.extensions.ecephys import EcephysExtension
 
 
@@ -12,6 +14,20 @@ def test_import_package() -> None:
     import aind_session
 
     assert aind_session.__name__ == "aind_session"
+
+
+@pytest.mark.parametrize(
+    "retry",
+    (
+        aind_session.utils.codeocean_utils.DEFAULT_CO_RETRY,
+        aind_session.utils.docdb_utils.DEFAULT_DOCDB_RETRY,
+    ),
+)
+def test_default_retries_do_not_retry_post_503(
+    retry: urllib3.Retry,
+) -> None:
+    assert not retry.is_retry("POST", 503)
+    assert retry.is_retry("GET", 503)  # type: ignore[attr-defined]
 
 
 @pytest.mark.parametrize(
