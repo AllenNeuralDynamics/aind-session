@@ -27,7 +27,7 @@ def test_default_retries_do_not_retry_post_503(
     retry: urllib3.Retry,
 ) -> None:
     assert not retry.is_retry("POST", 503)
-    assert retry.is_retry("GET", 503)  # type: ignore[attr-defined]
+    assert retry.is_retry("GET", 503)
 
 
 @pytest.mark.parametrize(
