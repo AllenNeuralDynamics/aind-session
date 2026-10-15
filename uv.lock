@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.9"
 resolution-markers = [
     "python_full_version >= '3.10'",
@@ -43,8 +43,9 @@ docdb = [
 
 [[package]]
 name = "aind-session"
-version = "0.3.26"
+version = "0.3.27"
 source = { editable = "." }
+default-groups = "all"
 dependencies = [
     { name = "aind-codeocean-pipeline-monitor" },
     { name = "aind-data-access-api", extra = ["docdb"] },

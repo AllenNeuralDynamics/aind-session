@@ -8,7 +8,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 <!-- insertion marker -->
 ## Unreleased
 
-<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.25...HEAD)</small>
+<small>[Compare with latest](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.26...HEAD)</small>
+
+### Removed
+
+- Remove redundant retry tests ([61d6b72](https://github.com/AllenNeuralDynamics/aind-session/commit/61d6b727ae453df8d5e4e83fb62c3a98bf054aaa) by copilot-swe-agent[bot]).
+
+<!-- insertion marker -->
+## [v0.3.26](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.26) - 2026-07-22
+
+<small>[Compare with v0.3.25](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.25...v0.3.26)</small>
 
 ### Fixed
 
@@ -16,7 +25,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix previous ([4a83890](https://github.com/AllenNeuralDynamics/aind-session/commit/4a83890b5186c7f9027fcbf75e360f6fe51805eb) by Ben Hardcastle).
 - Fix CCF scale inference and channel results handling ([941b067](https://github.com/AllenNeuralDynamics/aind-session/commit/941b0676bd2f08d4b92d7c6c48a94af471f6744d) by Ben Hardcastle).
 
-<!-- insertion marker -->
 ## [v0.3.25](https://github.com/AllenNeuralDynamics/aind-session/releases/tag/v0.3.25) - 2026-07-20
 
 <small>[Compare with v0.3.24](https://github.com/AllenNeuralDynamics/aind-session/compare/v0.3.24...v0.3.25)</small>
